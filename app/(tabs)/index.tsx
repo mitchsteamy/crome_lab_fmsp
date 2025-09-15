@@ -1,75 +1,284 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import { useFocusEffect, useRouter } from "expo-router";
+import React, { useCallback, useEffect, useState } from "react";
+import {
+  Alert,
+  FlatList,
+  Image,
+  Platform,
+  SafeAreaView,
+  StyleSheet,
+} from "react-native";
+import { ThemedText } from "../../components/common/ThemedText";
+import { ThemedView } from "../../components/common/ThemedView";
+import AddMedicationButton from "../../components/medications/AddMedicationButton";
+import MedicationCard from "../../components/medications/MedicationCard";
+import { StorageService } from "../../services/StorageService";
+import { Medication } from "../../types/Medication";
 
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+export default function MedicationsIndex() {
+  const [medications, setMedications] = useState<Medication[]>([]);
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
-export default function HomeScreen() {
+  // Load medications when component mounts
+  useEffect(() => {
+    loadMedications();
+  }, []);
+
+  // Reload medications when screen comes into focus (after adding/editing)
+  useFocusEffect(
+    useCallback(() => {
+      loadMedications();
+    }, [])
+  );
+
+  const loadMedications = async () => {
+    try {
+      setLoading(true);
+      const loadedMedications = await StorageService.retrieveMedications();
+      setMedications(loadedMedications);
+    } catch (error) {
+      console.error("Error loading medications:", error);
+      if (Platform.OS === "web") {
+        alert("Failed to load medications");
+      } else {
+        Alert.alert("Error", "Failed to load medications");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddMedication = () => {
+    router.push("/medication/add");
+  };
+
+  const handleEditMedication = (medicationId: string) => {
+    router.push(`/medication/${medicationId}`);
+  };
+
+  const handleDeleteMedication = async (medicationId: string) => {
+    if (Platform.OS === "web") {
+      const confirmed = window.confirm(
+        "Are you sure you want to delete this medication? This action cannot be undone."
+      );
+      if (confirmed) {
+        try {
+          await StorageService.deleteMedication(medicationId);
+          setMedications((prev) =>
+            prev.filter((med) => med.id !== medicationId)
+          );
+        } catch (error) {
+          alert("Failed to delete medication");
+        }
+      }
+    } else {
+      Alert.alert(
+        "Delete Medication",
+        "Are you sure you want to delete this medication? This action cannot be undone.",
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Delete",
+            style: "destructive",
+            onPress: async () => {
+              try {
+                await StorageService.deleteMedication(medicationId);
+                setMedications((prev) =>
+                  prev.filter((med) => med.id !== medicationId)
+                );
+              } catch (error) {
+                Alert.alert("Error", "Failed to delete medication");
+              }
+            },
+          },
+        ]
+      );
+    }
+  };
+
+  const renderMedicationItem = ({ item }: { item: Medication }) => (
+    <MedicationCard
+      medication={item}
+      onPress={() => handleEditMedication(item.id)}
+      onDelete={() => handleDeleteMedication(item.id)}
+    />
+  );
+
+  const renderEmptyState = () => (
+    <ThemedView style={styles.emptyState} darkColor="#1f1f1f">
+      <ThemedText type="subtitle" style={styles.emptyTitle}>
+        No Medications Yet
+      </ThemedText>
+      <ThemedText type="default" style={styles.emptySubtitle}>
+        Add your first medication to start building your Medication Safety Plan
+      </ThemedText>
+      <AddMedicationButton onPress={handleAddMedication} />
+    </ThemedView>
+  );
+
+  const renderHeader = () => (
+    <ThemedView style={styles.header} lightColor="#fff" darkColor="#2a2a2a">
+      <ThemedView
+        style={styles.headerContent}
+        lightColor="#fff"
+        darkColor="#2a2a2a"
+      >
+        {Platform.OS === "web" ? (
+          // Web layout: Text left, Logo right
+          <>
+            <ThemedView
+              style={styles.headerTextContainer}
+              lightColor="#fff"
+              darkColor="#2a2a2a"
+            >
+              <ThemedText type="title">My Medications</ThemedText>
+              <ThemedText type="default" lightColor="#666" darkColor="#ccc">
+                {medications.length} medication
+                {medications.length !== 1 ? "s" : ""}
+              </ThemedText>
+            </ThemedView>
+            <Image
+              source={require("../../assets/images/logo.png")}
+              style={styles.headerLogo}
+              resizeMode="contain"
+            />
+          </>
+        ) : (
+          // Mobile layout: Logo above, Text below
+          <>
+            <Image
+              source={require("../../assets/images/logo.png")}
+              style={styles.headerLogo}
+              resizeMode="contain"
+            />
+            <ThemedView
+              style={styles.headerTextContainer}
+              lightColor="#fff"
+              darkColor="#2a2a2a"
+            >
+              <ThemedText type="title">My Medications</ThemedText>
+              <ThemedText type="default" lightColor="#666" darkColor="#ccc">
+                {medications.length} medication
+                {medications.length !== 1 ? "s" : ""}
+              </ThemedText>
+            </ThemedView>
+          </>
+        )}
+      </ThemedView>
+    </ThemedView>
+  );
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <ThemedView style={styles.loadingContainer}>
+          <ThemedText type="default">Loading medications...</ThemedText>
+        </ThemedView>
+      </SafeAreaView>
+    );
+  }
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+    <ThemedView
+      style={styles.container}
+      darkColor="#1f1f1f"
+      lightColor="#f5f5f5"
+    >
+      <SafeAreaView style={styles.safeArea}>
+        {renderHeader()}
+
+        {medications.length === 0 ? (
+          renderEmptyState()
+        ) : (
+          <>
+            <FlatList
+              data={medications}
+              renderItem={renderMedicationItem}
+              keyExtractor={(item) => item.id}
+              contentContainerStyle={styles.listContainer}
+              showsVerticalScrollIndicator={false}
+              style={styles.list}
+            />
+
+            <ThemedView
+              style={styles.fabContainer}
+              darkColor="transparent"
+              lightColor="#f5f5f5"
+            >
+              <AddMedicationButton onPress={handleAddMedication} /> 
+            </ThemedView>
+          </>
+        )}
+      </SafeAreaView>
+    </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  container: {
+    flex: 1,
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  safeArea: {
+    flex: 1,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  header: {
+    marginTop: Platform.OS === "web" ? 0 : 48,
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: "#e0e0e0",
+  },
+  headerContent: {
+    flexDirection: Platform.OS === "web" ? "row" : "column",
+    alignItems: "center",
+  },
+  headerLogo: {
+    width: Platform.OS === "web" ? 250 : 200,
+    height: Platform.OS === "web" ? 85 : 68,
+    marginLeft: Platform.OS === "web" ? 15 : 0, // Changed from marginRight to marginLeft for web
+    marginBottom: Platform.OS === "web" ? 0 : 24, // Changed from marginTop to marginBottom for mobile
+    borderRadius: 8,
+  },
+  headerTextContainer: {
+    flex: Platform.OS === "web" ? 1 : 0,
+    alignItems: Platform.OS === "web" ? "flex-start" : "center",
+  },
+  headerTitle: {
+    textAlign: Platform.OS === "web" ? "left" : "center",
+  },
+  headerSubtitle: {
+    textAlign: Platform.OS === "web" ? "left" : "center",
+  },
+  list: {
+    flex: 1,
+  },
+  listContainer: {
+    padding: 16,
+    paddingBottom: 100, // Space for FAB
+  },
+  emptyState: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 40,
+  },
+  emptyTitle: {
+    marginBottom: 12,
+    textAlign: "center",
+  },
+  emptySubtitle: {
+    textAlign: "center",
+    marginBottom: 32,
+  },
+  fabContainer: {
+    position: "absolute",
+    bottom: 20,
+    right: 20,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
 });
