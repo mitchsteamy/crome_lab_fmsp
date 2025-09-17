@@ -223,7 +223,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    marginTop: Platform.OS === "web" ? 0 : 48,
+    marginTop: Platform.OS === "android" ? 48 : 0,
     paddingHorizontal: 20,
     paddingVertical: 20,
     borderBottomWidth: 1,

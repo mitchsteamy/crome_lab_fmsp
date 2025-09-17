@@ -12,6 +12,7 @@ export interface QuestionStep {
     | "multiselect"
     | "date"
     | "time"
+    | "time-list"
     | "number";
   question: string;
   required: boolean;
@@ -117,15 +118,6 @@ export const BASIC_INFO_QUESTIONS: QuestionSection = {
       placeholder: "e.g., acetaminophen, ibuprofen, atorvastatin",
       helpText: "This is the scientific/chemical name, often in smaller print",
     },
-    /*     {
-      id: 'patient_name',
-      title: 'Patient Name',
-      type: 'select',
-      question: 'Which family member/patient is this medication for?',
-      required: true,
-      options: ['My Self', 'My Family Member', 'My Patient'], // Will be customizable
-      helpText: 'This helps organize medications by family member'
-    }, */
     {
       id: "reason_for_use",
       title: "Reason for Use",
@@ -146,15 +138,6 @@ export const DOSAGE_ADMIN_QUESTIONS: QuestionSection = {
   description: "How do you take this medication?",
   steps: [
     {
-      id: "dosage_amount",
-      title: "Dosage Amount",
-      type: "text",
-      question: "How much do you take each time?",
-      required: true,
-      placeholder: "e.g., 1, 2, 1/2, 5",
-      helpText: "Enter the amount as written on your medication",
-    },
-    {
       id: "dosage_unit",
       title: "Dosage Unit",
       type: "select",
@@ -173,6 +156,15 @@ export const DOSAGE_ADMIN_QUESTIONS: QuestionSection = {
         "other",
       ],
       helpText: "Select the unit that matches your medication",
+    },
+    {
+      id: "dosage_amount",
+      title: "Dosage Amount",
+      type: "text",
+      question: "How much do you take each time?",
+      required: true,
+      placeholder: "e.g., 1, 2, 1/2, 5",
+      helpText: "Enter the amount as written on your medication",
     },
     {
       id: "administration_method",
@@ -202,7 +194,12 @@ export const DOSAGE_ADMIN_QUESTIONS: QuestionSection = {
       type: "select",
       question: "Should this medication be taken with food?",
       required: true,
-      options: ["before food", "with food", "after food", "no food requirement"],
+      options: [
+        "before food",
+        "with food",
+        "after food",
+        "no food requirement",
+      ],
       helpText: "Check your medication label or ask your pharmacist if unsure",
     },
   ],
@@ -318,33 +315,23 @@ export const SCHEDULE_QUESTIONS: QuestionSection = {
           answers.schedule_frequency
         ) && answers.daily_frequency !== "as-needed",
     },
-    /*     {
-      id: 'second_dose_time',
-      title: 'Second Dose Time',
-      type: 'time',
-      question: 'What time do you take your second dose?',
-      required: true,
-      helpText: 'Select the time for your second daily dose',
-      showIf: (answers) => ['twice', 'three-times', 'four-times', 'more-than-four'].includes(answers.daily_frequency)
-    },
     {
-      id: 'third_dose_time',
-      title: 'Third Dose Time',
-      type: 'time',
-      question: 'What time do you take your third dose?',
-      required: true,
-      helpText: 'Select the time for your third daily dose',
-      showIf: (answers) => ['three-times', 'four-times', 'more-than-four'].includes(answers.daily_frequency)
+      id: "dose_times",
+      title: "Medication Times",
+      type: "time-list",
+      question: "Review and adjust your daily medication times:",
+      required: false,
+      helpText:
+        "Tap any time to change it. These are calculated based on your first dose time and frequency.",
+      showIf: (answers) =>
+        ["daily", "every-other-day", "specific-days"].includes(
+          answers.schedule_frequency
+        ) &&
+        answers.daily_frequency &&
+        answers.daily_frequency !== "as-needed" &&
+        answers.daily_frequency !== "once" &&
+        answers.first_dose_time,
     },
-    {
-      id: 'fourth_dose_time',
-      title: 'Fourth Dose Time',
-      type: 'time',
-      question: 'What time do you take your fourth dose?',
-      required: true,
-      helpText: 'Select the time for your fourth daily dose',
-      showIf: (answers) => ['four-times', 'more-than-four'].includes(answers.daily_frequency)
-    }, */
     {
       id: "start_date",
       title: "Start Date",
@@ -490,16 +477,19 @@ export const COMMUNICATION_SAFETY_QUESTIONS: QuestionSection = {
       id: "poc_name",
       title: "Point of Contact Name",
       type: "text",
-      question: " Who is your main point of contact for questions/concerns about this medication?",
+      question:
+        " Who is your main point of contact for questions/concerns about this medication?",
       required: true,
       placeholder: "e.g., Dr. Abraham, Dr. Strong",
-      helpText: "The name of the healthcare provider you would contact with questions about this medication ",
+      helpText:
+        "The name of the healthcare provider you would contact with questions about this medication ",
     },
     {
       id: "poc_info",
       title: "Point of Contact Information",
       type: "text",
-      question: " What is the email or phone number for your main point of contact for questions/concerns about this medication?",
+      question:
+        " What is the email or phone number for your main point of contact for questions/concerns about this medication?",
       required: true,
       placeholder: "e.g., 859-867-5309, john.doe@uky.edu",
       helpText:
@@ -759,8 +749,21 @@ export function QuestionEngineProvider({
   const buildMedication = (): Partial<Medication> => {
     const answers = state.answers;
 
-    // Helper function to compute dose times
-    const computeDoseTimes = () => {
+    // Helper function to get dose times - use stored times if available, otherwise compute them
+    const getDoseTimes = () => {
+      // If user has customized the dose times, use those
+      if (
+        answers.dose_times &&
+        Array.isArray(answers.dose_times) &&
+        answers.dose_times.length > 0
+      ) {
+        return answers.dose_times.map((timeEntry: any) => ({
+          hour: timeEntry.hour,
+          minute: timeEntry.minute,
+        }));
+      }
+
+      // Otherwise compute from first dose time and frequency
       const firstDoseTime = answers.first_dose_time
         ? new Date(answers.first_dose_time)
         : null;
@@ -832,7 +835,7 @@ export function QuestionEngineProvider({
       schedule: {
         frequency: answers.schedule_frequency || "daily",
         dailyFrequency: answers.daily_frequency,
-        doseTimes: computeDoseTimes(),
+        doseTimes: getDoseTimes(),
         daysOfWeek: answers.specific_days || [],
         intervalDays: parseInt(answers.interval_days) || undefined,
         intervalWeeks: parseInt(answers.interval_weeks) || undefined,
@@ -863,9 +866,9 @@ export function QuestionEngineProvider({
       communication: {
         questionsAboutMedication: answers.questions_about_medication || "",
         primaryContact: {
-          name: answers.emergency_contact_name || "",
-          phone: answers.emergency_contact_phone || "",
-          role: answers.emergency_contact_role || "Pharmacist",
+          name: answers.poc_name || "",
+          phone: answers.poc_info || "",
+          role: "Healthcare Provider",
         },
         overdoseInstructions:
           "Contact emergency services (911) or poison control (1-800-222-1222)",

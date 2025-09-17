@@ -1,5 +1,5 @@
 import React from "react";
-import { StyleSheet } from "react-native";
+import { StyleSheet, ScrollView, Platform } from "react-native";
 import { ThemedText } from "../common/ThemedText";
 import { ThemedView } from "../common/ThemedView";
 import SafetyPlanSection from "./SafetyPlanSection";
@@ -39,7 +39,7 @@ export default function WeeklySchedule({ medications }: WeeklyScheduleProps) {
     }).filter(item => item.times.length > 0); // Only include meds that have times for this day
   };
 
-  const scheduleContent = (
+  const renderCalendarContent = () => (
     <ThemedView style={styles.calendarContainer} lightColor="transparent" darkColor="transparent">
       {/* Days of week header */}
       <ThemedView style={styles.daysHeader} lightColor="#f8f9fa" darkColor="#404040">
@@ -79,7 +79,7 @@ export default function WeeklySchedule({ medications }: WeeklyScheduleProps) {
                       style={styles.medicationName}
                       lightColor="#333"
                       darkColor="#fff"
-                      numberOfLines={1}
+                      numberOfLines={2}
                     >
                       {item.medication.brandName}
                     </ThemedText>
@@ -107,6 +107,21 @@ export default function WeeklySchedule({ medications }: WeeklyScheduleProps) {
     </ThemedView>
   );
 
+  const scheduleContent = Platform.OS === 'web' ? (
+    // Web: Direct rendering, no scroll
+    renderCalendarContent()
+  ) : (
+    // Mobile: Wrapped in horizontal scroll
+    <ScrollView 
+      horizontal={true}
+      showsHorizontalScrollIndicator={false}
+      style={styles.scrollContainer}
+      contentContainerStyle={styles.scrollContent}
+    >
+      {renderCalendarContent()}
+    </ScrollView>
+  );
+
   return (
     <SafetyPlanSection
       title="Weekly Medication Schedule"
@@ -117,11 +132,18 @@ export default function WeeklySchedule({ medications }: WeeklyScheduleProps) {
 }
 
 const styles = StyleSheet.create({
+  scrollContainer: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+  },
   calendarContainer: {
     borderRadius: 8,
     overflow: "hidden",
     borderWidth: 1,
     borderColor: "#e0e0e0",
+    ...(Platform.OS !== 'web' && { minWidth: 700 }),
   },
   daysHeader: {
     flexDirection: "row",
@@ -129,7 +151,7 @@ const styles = StyleSheet.create({
     borderBottomColor: "#e0e0e0",
   },
   dayHeaderCell: {
-    flex: 1,
+    ...(Platform.OS === 'web' ? { flex: 1 } : { width: 100 }),
     paddingVertical: 12,
     paddingHorizontal: 4,
     alignItems: "center",
@@ -145,7 +167,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
   },
   dayColumn: {
-    flex: 1,
+    ...(Platform.OS === 'web' ? { flex: 1 } : { width: 100 }),
     borderRightWidth: 1,
     borderRightColor: "#f0f0f0",
     minHeight: 80,
@@ -156,6 +178,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#f0f0f0",
     alignItems: "center",
+    minHeight: 50,
   },
   medicationEntryEven: {
     // Background handled by ThemedView
@@ -177,6 +200,7 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
     alignItems: "center",
     justifyContent: "center",
+    minHeight: 80,
   },
   emptyDayText: {
     fontSize: 16,

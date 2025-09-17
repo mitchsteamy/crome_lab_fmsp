@@ -42,14 +42,14 @@ export default function RootLayout() {
         <Stack.Screen 
           name="medication/add" 
           options={{ 
-            presentation: 'modal',
+            presentation: 'pageSheet',
             headerShown: false 
           }} 
         />
         <Stack.Screen 
           name="medication/[id]" 
           options={{ 
-            presentation: 'modal',
+            presentation: 'pageSheet',
             headerShown: false 
           }} 
         />

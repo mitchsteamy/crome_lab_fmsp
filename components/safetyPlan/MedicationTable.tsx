@@ -1,5 +1,5 @@
 import React from "react";
-import { StyleSheet } from "react-native";
+import { StyleSheet, ScrollView, Platform } from "react-native";
 import { ThemedText } from "../common/ThemedText";
 import { ThemedView } from "../common/ThemedView";
 import SafetyPlanSection from "./SafetyPlanSection";
@@ -21,7 +21,7 @@ export default function MedicationTable({ medications }: MedicationTableProps) {
     );
   }
 
-  const tableContent = (
+  const renderTableContent = () => (
     <ThemedView
       style={styles.medicationTable}
       lightColor="transparent"
@@ -87,7 +87,7 @@ export default function MedicationTable({ medications }: MedicationTableProps) {
             >
               {med.brandName}
             </ThemedText>
-            {med.genericName && (
+            {med.genericName && med.genericName !== med.brandName && (
               <ThemedText
                 style={styles.genericName}
                 lightColor="#666"
@@ -169,6 +169,21 @@ export default function MedicationTable({ medications }: MedicationTableProps) {
     </ThemedView>
   );
 
+  const tableContent = Platform.OS === 'web' ? (
+    // Web: Direct rendering, no scroll
+    renderTableContent()
+  ) : (
+    // Mobile: Wrapped in horizontal scroll
+    <ScrollView 
+      horizontal={true}
+      showsHorizontalScrollIndicator={false}
+      style={styles.scrollContainer}
+      contentContainerStyle={styles.scrollContent}
+    >
+      {renderTableContent()}
+    </ScrollView>
+  );
+
   return (
     <SafetyPlanSection
       title="Medication Information"
@@ -178,11 +193,18 @@ export default function MedicationTable({ medications }: MedicationTableProps) {
 }
 
 const styles = StyleSheet.create({
+  scrollContainer: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+  },
   medicationTable: {
     borderRadius: 8,
     overflow: "hidden",
     borderWidth: 1,
     borderColor: "#e0e0e0",
+    ...(Platform.OS !== 'web' && { minWidth: 600 }),
   },
   tableHeader: {
     flexDirection: "row",
@@ -209,19 +231,19 @@ const styles = StyleSheet.create({
     borderBottomWidth: 0,
   },
   medicationCol: {
-    flex: 3,
+    ...(Platform.OS === 'web' ? { flex: 3 } : { width: 180 }),
     paddingRight: 12,
   },
   reasonCol: {
-    flex: 2,
+    ...(Platform.OS === 'web' ? { flex: 2 } : { width: 160 }),
     paddingRight: 12,
   },
   dosageCol: {
-    flex: 2,
+    ...(Platform.OS === 'web' ? { flex: 2 } : { width: 180 }),
     paddingRight: 12,
   },
   typeCol: {
-    flex: 1,
+    ...(Platform.OS === 'web' ? { flex: 1 } : { width: 80 }),
     alignItems: "center",
     justifyContent: "center",
   },

@@ -1,17 +1,196 @@
-import React from "react";
-import { TouchableOpacity, StyleSheet } from "react-native";
+import React, { useState } from "react";
+import { TouchableOpacity, StyleSheet, Alert, Platform } from "react-native";
+import { printToFileAsync } from 'expo-print';
+import { shareAsync } from 'expo-sharing';
+import * as MailComposer from 'expo-mail-composer';
 import { ThemedView } from "../common/ThemedView";
 import { ThemedText } from "../common/ThemedText";
+import { Medication } from "../../types/Medication";
+import { SafetyPlanPDFTemplate } from "../../services/SafetyPlanPDFTemplate";
+import { DateUtils } from "../../utils/dateUtils";
+
+interface SafetyPlanStats {
+  totalMedications: number;
+  activeMedications: number;
+  expiredMedications: number;
+  patients: string[];
+}
 
 interface ExportControlsProps {
-  onExportPDF: () => void;
-  onEmailShare: () => void;
+  medications: Medication[];
+  stats: SafetyPlanStats;
 }
 
 export default function ExportControls({
-  onExportPDF,
-  onEmailShare,
+  medications,
+  stats,
 }: ExportControlsProps) {
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  const generatePDFForWeb = async (): Promise<void> => {
+    const htmlContent = SafetyPlanPDFTemplate.generateHTML(medications, stats);
+    const currentDate = DateUtils.formatDate(new Date(), "short").replace(/\//g, "-");
+    const filename = `medication-safety-plan-${currentDate}.pdf`;
+    
+    // Create a new window with our content and trigger print
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(htmlContent);
+      printWindow.document.close();
+      
+      // Wait for content to load, then trigger print
+      printWindow.onload = () => {
+        setTimeout(() => {
+          printWindow.print();
+          printWindow.close();
+        }, 100);
+      };
+    } else {
+      // Fallback: create a blob and download link
+      const blob = new Blob([htmlContent], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename.replace('.pdf', '.html');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      Alert.alert(
+        "Download Complete", 
+        "HTML file downloaded. You can open it in your browser and print to PDF."
+      );
+    }
+  };
+
+  const generatePDFForMobile = async (): Promise<string | null> => {
+    try {
+      const htmlContent = SafetyPlanPDFTemplate.generateHTML(medications, stats);
+      
+      const { uri } = await printToFileAsync({
+        html: htmlContent,
+        base64: false,
+        margins: {
+          left: 20,
+          top: 20,
+          right: 20,
+          bottom: 20,
+        },
+      });
+
+      return uri;
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      throw new Error('Failed to generate PDF');
+    }
+  };
+
+  const handleShareExport = async () => {
+    if (isProcessing) return;
+
+    setIsProcessing(true);
+    try {
+      if (medications.length === 0) {
+        Alert.alert(
+          "No Medications", 
+          "Add some medications to your safety plan before creating a PDF."
+        );
+        return;
+      }
+
+      if (Platform.OS === 'web') {
+        await generatePDFForWeb();
+      } else {
+        // Mobile: Check if email is available first
+        const isEmailAvailable = await MailComposer.isAvailableAsync();
+        
+        if (isEmailAvailable) {
+          // Show options: Email or Save/Share
+          Alert.alert(
+            "Share Safety Plan",
+            "How would you like to share your medication safety plan?",
+            [
+              { text: "Cancel", style: "cancel" },
+              { 
+                text: "Email PDF", 
+                onPress: async () => {
+                  const pdfUri = await generatePDFForMobile();
+                  if (pdfUri) {
+                    await sendEmail(pdfUri);
+                  }
+                }
+              },
+              { 
+                text: "Save/Share", 
+                onPress: async () => {
+                  const pdfUri = await generatePDFForMobile();
+                  if (pdfUri) {
+                    await shareFile(pdfUri);
+                  }
+                }
+              }
+            ]
+          );
+        } else {
+          // No email available, just generate and share
+          const pdfUri = await generatePDFForMobile();
+          if (pdfUri) {
+            await shareFile(pdfUri);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Process error:', error);
+      Alert.alert(
+        "Error", 
+        "Failed to create PDF. Please try again."
+      );
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const sendEmail = async (pdfUri: string) => {
+    try {
+      const patientNames = [...new Set(medications.map(med => med.patientName))];
+      const patientNameList = patientNames.length > 1 
+        ? `${patientNames.slice(0, -1).join(', ')} and ${patientNames[patientNames.length - 1]}`
+        : patientNames[0] || 'Patient';
+
+      await MailComposer.composeAsync({
+        subject: `Medication Safety Plan - ${patientNameList}`,
+        body: `Please find attached the medication safety plan for ${patientNameList}.\n\nThis plan includes:\n• ${medications.length} medication${medications.length !== 1 ? 's' : ''}\n• Dosing schedules and administration instructions\n• Storage and disposal information\n• Emergency contact information\n\nGenerated on ${DateUtils.formatDate(new Date(), "long")}\n\nPlease keep this information accessible for emergencies.`,
+        attachments: [pdfUri],
+        isHtml: false,
+      });
+    } catch (error) {
+      console.error('Email error:', error);
+      Alert.alert("Email Error", "Failed to compose email.");
+    }
+  };
+
+  const shareFile = async (pdfUri: string) => {
+    try {
+      const currentDate = DateUtils.formatDate(new Date(), "short").replace(/\//g, "-");
+      const filename = `medication-safety-plan-${currentDate}.pdf`;
+
+      await shareAsync(pdfUri, {
+        mimeType: 'application/pdf',
+        dialogTitle: 'Share Medication Safety Plan',
+        UTI: 'com.adobe.pdf',
+      });
+
+      Alert.alert(
+        "PDF Generated", 
+        `Your medication safety plan has been created successfully!\n\nFile: ${filename}`
+      );
+    } catch (error) {
+      console.error('Share error:', error);
+      Alert.alert("Share Error", "Failed to share PDF.");
+    }
+  };
+
   return (
     <ThemedView style={styles.container} lightColor="#fff" darkColor="#1f1f1f">
       <ThemedView
@@ -19,36 +198,47 @@ export default function ExportControls({
         lightColor="#e0e0e0"
         darkColor="#404040"
       />
-      <ThemedView
-        style={styles.buttonContainer}
-        lightColor="transparent"
-        darkColor="transparent"
+      
+      <TouchableOpacity
+        style={[
+          styles.button,
+          isProcessing && styles.buttonDisabled
+        ]}
+        onPress={handleShareExport}
+        activeOpacity={0.8}
+        disabled={isProcessing}
       >
-        <TouchableOpacity
-          style={[styles.button, styles.shareButton]}
-          onPress={onEmailShare}
-          activeOpacity={0.8}
+        <ThemedText
+          type="defaultSemiBold"
+          style={[
+            styles.buttonText,
+            isProcessing && styles.buttonTextDisabled
+          ]}
+          lightColor="#f78b33"
+          darkColor="#f78b33"
         >
-          <ThemedText type="defaultSemiBold" style={styles.shareButtonText}>
-            Share
-          </ThemedText>
-        </TouchableOpacity>
+          {isProcessing ? "Creating PDF..." : Platform.OS === 'web' ? "Print/Download PDF" : "Share PDF"}
+        </ThemedText>
+      </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.button, styles.exportButton]}
-          onPress={onExportPDF}
-          activeOpacity={0.8}
+      {medications.length > 0 && (
+        <ThemedView 
+          style={styles.info}
+          lightColor="transparent"
+          darkColor="transparent"
         >
-          <ThemedText
-            type="defaultSemiBold"
-            style={styles.exportButtonText}
-            lightColor="#f78b33"
-            darkColor="#f78b33"
+          <ThemedText 
+            style={styles.infoText}
+            lightColor="#666"
+            darkColor="#999"
           >
-            Export
+            {Platform.OS === 'web' 
+              ? `PDF will include ${medications.length} medication${medications.length !== 1 ? 's' : ''} - use browser print to save as PDF`
+              : `PDF will include a complete safety plan for ${medications.length} medication${medications.length !== 1 ? 's' : ''}`
+            }
           </ThemedText>
-        </TouchableOpacity>
-      </ThemedView>
+        </ThemedView>
+      )}
     </ThemedView>
   );
 }
@@ -65,34 +255,32 @@ const styles = StyleSheet.create({
     right: 0,
     height: StyleSheet.hairlineWidth,
   },
-  buttonContainer: {
-    flexDirection: "row",
-    gap: 12,
-  },
   button: {
-    flex: 1,
     borderRadius: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 1,
-  },
-  exportButton: {
-    backgroundColor: "transparent",
+    borderWidth: 1.5,
     borderColor: "#f78b33",
-  },
-  shareButton: {
     backgroundColor: "transparent",
-    borderColor: "#4CAF50",
   },
-  exportButtonText: {
-    fontSize: 15,
+  buttonDisabled: {
+    opacity: 0.6,
+  },
+  buttonText: {
+    fontSize: 16,
     fontWeight: "600",
   },
-  shareButtonText: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#4CAF50",
+  buttonTextDisabled: {
+    opacity: 0.6,
+  },
+  info: {
+    marginTop: 8,
+    alignItems: "center",
+  },
+  infoText: {
+    fontSize: 11,
+    textAlign: "center",
   },
 });

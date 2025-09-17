@@ -1,4 +1,3 @@
-import React from "react";
 import { Image, Platform, StyleSheet } from "react-native";
 import { ThemedText } from "../common/ThemedText";
 import { ThemedView } from "../common/ThemedView";
@@ -125,7 +124,7 @@ export default function SafetyPlanHeader({ stats }: SafetyPlanHeaderProps) {
             lightColor="#666"
             darkColor="#999"
           >
-            Need Attention
+            Inactive Medications
           </ThemedText>
         </ThemedView>
       </ThemedView>
@@ -153,8 +152,15 @@ const styles = StyleSheet.create({
     flex: Platform.OS === "web" ? 1 : 0,
     alignItems: Platform.OS === "web" ? "flex-start" : "center",
   },
-  title: {
+  infoContainer: {
+    marginBottom: 8,
+    alignItems: "center",
   },
+  infoText: {
+    fontSize: 14,
+    textAlign: "center",
+  },
+  title: {},
   titleText: {
     marginBottom: 4,
   },

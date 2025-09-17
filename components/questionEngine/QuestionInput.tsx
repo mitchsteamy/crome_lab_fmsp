@@ -22,6 +22,12 @@ interface QuestionInputProps {
   answers?: Record<string, any>;
 }
 
+interface TimeEntry {
+  hour: number;
+  minute: number;
+  id: string;
+}
+
 export default function QuestionInput({
   questionId,
   type,
@@ -37,6 +43,7 @@ export default function QuestionInput({
   const [isFocused, setIsFocused] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
+  const [editingTimeIndex, setEditingTimeIndex] = useState<number | null>(null);
 
   const formatOptionText = (option: string) => {
     const formatMap: Record<string, string> = {
@@ -56,7 +63,7 @@ export default function QuestionInput({
            (option.charAt(0).toUpperCase() + option.slice(1).replace(/-/g, " "));
   };
 
-  const computeScheduleTimes = () => {
+  const computeScheduleTimes = (): TimeEntry[] => {
     if (!answers.first_dose_time || !answers.daily_frequency) {
       return [];
     }
@@ -65,7 +72,7 @@ export default function QuestionInput({
     const dailyFreq = answers.daily_frequency;
     const intervalHours = parseInt(answers.interval_hours) || 4;
 
-    const times = [];
+    const times: TimeEntry[] = [];
     const firstHour = firstDoseTime.getHours();
     const firstMinute = firstDoseTime.getMinutes();
 
@@ -75,12 +82,20 @@ export default function QuestionInput({
       let currentMinute = firstMinute;
 
       for (let i = 0; i < 24 / intervalHours; i++) {
-        times.push({ hour: currentHour, minute: currentMinute });
+        times.push({ 
+          hour: currentHour, 
+          minute: currentMinute, 
+          id: `dose-${i}` 
+        });
         currentHour = (currentHour + intervalHours) % 24;
       }
     } else {
       // Fixed times with last dose at 11pm
-      times.push({ hour: firstHour, minute: firstMinute });
+      times.push({ 
+        hour: firstHour, 
+        minute: firstMinute, 
+        id: 'dose-0' 
+      });
 
       let numDoses = 1;
       if (dailyFreq === "twice") numDoses = 2;
@@ -100,12 +115,24 @@ export default function QuestionInput({
           const totalMin = firstHour * 60 + firstMinute + intervalMinutes * i;
           const hour = Math.floor(totalMin / 60) % 24;
           const minute = Math.floor(totalMin % 60);
-          times.push({ hour, minute });
+          times.push({ 
+            hour, 
+            minute, 
+            id: `dose-${i}` 
+          });
         }
       }
     }
 
     return times;
+  };
+
+  // Initialize time list with computed times if not already set
+  const initializeTimeList = (): TimeEntry[] => {
+    if (Array.isArray(value) && value.length > 0) {
+      return value;
+    }
+    return computeScheduleTimes();
   };
 
   // Helper function to format date for web input
@@ -145,6 +172,35 @@ export default function QuestionInput({
     date.setHours(parseInt(hours, 10));
     date.setMinutes(parseInt(minutes, 10));
     onValueChange(date.toISOString());
+  };
+
+  // Helper function to update a specific time in the time list
+  const updateTimeInList = (index: number, newHour: number, newMinute: number) => {
+    const timeList = initializeTimeList();
+    const updatedList = [...timeList];
+    updatedList[index] = {
+      ...updatedList[index],
+      hour: newHour,
+      minute: newMinute
+    };
+    onValueChange(updatedList);
+    setEditingTimeIndex(null);
+  };
+
+  // Helper function to create a Date object for time picker
+  const createTimeDate = (hour: number, minute: number) => {
+    const date = new Date();
+    date.setHours(hour);
+    date.setMinutes(minute);
+    date.setSeconds(0);
+    return date;
+  };
+
+  // Helper function to handle web time input for time list
+  const handleWebTimeListChange = (index: number, timeString: string) => {
+    if (!timeString) return;
+    const [hours, minutes] = timeString.split(':');
+    updateTimeInList(index, parseInt(hours, 10), parseInt(minutes, 10));
   };
 
   const renderTextInput = () => (
@@ -277,6 +333,80 @@ export default function QuestionInput({
     );
   };
 
+  const renderTimeList = () => {
+    const timeList = initializeTimeList();
+
+    if (timeList.length === 0) {
+      return (
+        <ThemedView style={styles.timeListEmpty}>
+          <ThemedText style={styles.timeListEmptyText}>
+            Complete the previous questions to see your medication schedule
+          </ThemedText>
+        </ThemedView>
+      );
+    }
+
+    return (
+      <ThemedView style={styles.timeListContainer} darkColor="#222" lightColor="#fff">
+        <ThemedText style={styles.timeListTitle}>
+          Daily Medication Times:
+        </ThemedText>
+        
+        {timeList.map((timeEntry, index) => (
+          <ThemedView key={timeEntry.id} style={styles.timeListItem} darkColor="#222" lightColor="#fff">
+            <ThemedText style={styles.timeListLabel}>
+              Dose {index + 1}:
+            </ThemedText>
+            
+            {Platform.OS === 'web' ? (
+              <input
+                type="time"
+                value={`${timeEntry.hour.toString().padStart(2, '0')}:${timeEntry.minute.toString().padStart(2, '0')}`}
+                onChange={(e) => handleWebTimeListChange(index, e.target.value)}
+                style={styles.webTimeListInput}
+              />
+            ) : (
+              <TouchableOpacity
+                style={styles.timeListButton}
+                onPress={() => setEditingTimeIndex(index)}
+              >
+                <ThemedText style={styles.timeListButtonText}>
+                  {`${timeEntry.hour.toString().padStart(2, '0')}:${timeEntry.minute.toString().padStart(2, '0')}`}
+                </ThemedText>
+              </TouchableOpacity>
+            )}
+          </ThemedView>
+        ))}
+
+        {Platform.OS !== 'web' && editingTimeIndex !== null && (
+          <DateTimePicker
+            value={createTimeDate(
+              timeList[editingTimeIndex].hour,
+              timeList[editingTimeIndex].minute
+            )}
+            mode="time"
+            display={Platform.OS === "ios" ? "spinner" : "default"}
+            onChange={(event, selectedTime) => {
+              if (Platform.OS === "android") {
+                setEditingTimeIndex(null);
+              }
+              if (selectedTime && editingTimeIndex !== null) {
+                updateTimeInList(
+                  editingTimeIndex,
+                  selectedTime.getHours(),
+                  selectedTime.getMinutes()
+                );
+              }
+              if (Platform.OS === "ios") {
+                // On iOS, we keep the picker open until user dismisses
+              }
+            }}
+          />
+        )}
+      </ThemedView>
+    );
+  };
+
   const renderSelect = () => (
     <ThemedView
       style={styles.selectContainer}
@@ -368,41 +498,6 @@ export default function QuestionInput({
     );
   };
 
-  const renderSchedulePreview = () => {
-    if (
-      questionId !== "first_dose_time" ||
-      !value ||
-      answers.daily_frequency === "once"
-    ) {
-      return null;
-    }
-
-    const times = computeScheduleTimes();
-
-    if (times.length <= 1) {
-      return null;
-    }
-
-    return (
-      <ThemedView
-        style={styles.schedulePreview}
-        lightColor="#f0f8ff"
-        darkColor="#2a2a2a"
-      >
-        <ThemedText style={styles.schedulePreviewTitle}>
-          Your Daily Medication Schedule:
-        </ThemedText>
-        {times.map((time, index) => (
-          <ThemedText key={index} style={styles.scheduleTime}>
-            {`${time.hour.toString().padStart(2, "0")}:${time.minute
-              .toString()
-              .padStart(2, "0")}`}
-          </ThemedText>
-        ))}
-      </ThemedView>
-    );
-  };
-
   const renderInput = () => {
     switch (type) {
       case "text":
@@ -417,6 +512,8 @@ export default function QuestionInput({
         return renderDatePicker();
       case "time":
         return renderTimePicker();
+      case "time-list":
+        return renderTimeList();
       default:
         return renderTextInput();
     }
@@ -429,7 +526,6 @@ export default function QuestionInput({
       darkColor="transparent"
     >
       {renderInput()}
-      {renderSchedulePreview()}
       {helpText && (
         <ThemedText style={styles.helpText} lightColor="#666" darkColor="#999">
           {helpText}
@@ -512,6 +608,71 @@ const styles = StyleSheet.create({
     outline: "none",
     fontFamily: "inherit",
   },
+  timeListContainer: {
+    borderRadius: 12,
+    padding: 16,
+    borderLeftWidth: 4,
+    borderLeftColor: "#f78b33",
+  },
+  timeListEmpty: {
+    backgroundColor: "#f8f9fa",
+    borderRadius: 12,
+    padding: 20,
+    alignItems: "center",
+  },
+  timeListEmptyText: {
+    fontSize: 14,
+    color: "#666",
+    textAlign: "center",
+  },
+  timeListTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: 12,
+    color: "#f78b33",
+  },
+  timeListItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "#e0e0e0",
+  },
+  timeListLabel: {
+    fontSize: 14,
+    fontWeight: "500",
+    flex: 1,
+  },
+  timeListButton: {
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    minWidth: 80,
+    alignItems: "center",
+  },
+  timeListButtonText: {
+    fontSize: 16,
+    fontWeight: "500",
+    color: "#333",
+  },
+  webTimeListInput: {
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 16,
+    backgroundColor: "#fff",
+    color: "#333",
+    minWidth: 80,
+    textAlign: "center",
+    outline: "none",
+    fontFamily: "inherit",
+  },
   selectContainer: {
     gap: 12,
   },
@@ -567,26 +728,6 @@ const styles = StyleSheet.create({
   selectOptionTextSelected: {
     color: "#f78b33",
     fontWeight: "500",
-  },
-  schedulePreview: {
-    backgroundColor: "#f0f8ff",
-    borderRadius: 8,
-    padding: 16,
-    marginTop: 16,
-    borderLeftWidth: 4,
-    borderLeftColor: "#f78b33",
-  },
-  schedulePreviewTitle: {
-    fontSize: 14,
-    fontWeight: "600",
-    marginBottom: 8,
-    color: "#f78b33",
-  },
-  scheduleTime: {
-    fontSize: 16,
-    fontWeight: "500",
-    marginBottom: 4,
-    color: "#333",
   },
   helpText: {
     fontSize: 14,

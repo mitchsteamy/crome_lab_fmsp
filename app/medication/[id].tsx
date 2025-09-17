@@ -206,6 +206,169 @@ export default function MedicationDetailPage() {
     );
   };
 
+  const renderCommunicationSection = () => {
+    if (!medication?.communication) return null;
+
+    const hasCommunicationData = 
+      medication.communication.primaryContact?.name?.trim() ||
+      medication.communication.primaryContact?.phone?.trim() ||
+      medication.communication.questionsAboutMedication?.trim() ||
+      medication.communication.schoolPlan?.trim() ||
+      medication.communication.additionalConcerns?.trim();
+
+    if (!hasCommunicationData) return null;
+
+    return (
+      <ThemedView style={styles.section} lightColor="#fff" darkColor="#2a2a2a">
+        <ThemedText
+          type="subtitle"
+          style={styles.sectionTitle}
+          lightColor="#333"
+          darkColor="#fff"
+        >
+          Communication & Safety
+        </ThemedText>
+        <ThemedView
+          style={styles.sectionContent}
+          lightColor="transparent"
+          darkColor="transparent"
+        >
+          {/* Primary Contact */}
+          {(medication.communication.primaryContact?.name?.trim() || 
+            medication.communication.primaryContact?.phone?.trim()) && (
+            <ThemedView
+              style={styles.contactSection}
+              lightColor="transparent"
+              darkColor="transparent"
+            >
+              <ThemedText
+                type="defaultSemiBold"
+                style={styles.contactTitle}
+                lightColor="#333"
+                darkColor="#fff"
+              >
+                Primary Contact
+              </ThemedText>
+              {renderDetailRow(
+                "Name",
+                medication.communication.primaryContact?.name,
+                true
+              )}
+              {renderDetailRow(
+                "Phone",
+                medication.communication.primaryContact?.phone,
+                true
+              )}
+              {renderDetailRow(
+                "Role",
+                medication.communication.primaryContact?.role || "Healthcare Provider"
+              )}
+            </ThemedView>
+          )}
+
+          {/* Questions About Medication */}
+          {medication.communication.questionsAboutMedication?.trim() && (
+            <ThemedView
+              style={styles.questionSection}
+              lightColor="transparent"
+              darkColor="transparent"
+            >
+              <ThemedText
+                type="defaultSemiBold"
+                style={styles.questionTitle}
+                lightColor="#333"
+                darkColor="#fff"
+              >
+                Questions & Concerns
+              </ThemedText>
+              <ThemedText
+                style={styles.questionText}
+                lightColor="#666"
+                darkColor="#ccc"
+              >
+                {medication.communication.questionsAboutMedication}
+              </ThemedText>
+            </ThemedView>
+          )}
+
+          {/* School Plan */}
+          {medication.communication.schoolPlan?.trim() && (
+            <ThemedView
+              style={styles.schoolSection}
+              lightColor="transparent"
+              darkColor="transparent"
+            >
+              <ThemedText
+                type="defaultSemiBold"
+                style={styles.schoolTitle}
+                lightColor="#333"
+                darkColor="#fff"
+              >
+                School Plan
+              </ThemedText>
+              <ThemedText
+                style={styles.schoolText}
+                lightColor="#666"
+                darkColor="#ccc"
+              >
+                {medication.communication.schoolPlan}
+              </ThemedText>
+            </ThemedView>
+          )}
+
+          {/* Additional Concerns */}
+          {medication.communication.additionalConcerns?.trim() && (
+            <ThemedView
+              style={styles.additionalSection}
+              lightColor="transparent"
+              darkColor="transparent"
+            >
+              <ThemedText
+                type="defaultSemiBold"
+                style={styles.additionalTitle}
+                lightColor="#333"
+                darkColor="#fff"
+              >
+                Additional Instructions
+              </ThemedText>
+              <ThemedText
+                style={styles.additionalText}
+                lightColor="#666"
+                darkColor="#ccc"
+              >
+                {medication.communication.additionalConcerns}
+              </ThemedText>
+            </ThemedView>
+          )}
+
+          {/* Emergency Instructions */}
+          <ThemedView
+            style={styles.emergencySection}
+            lightColor="transparent"
+            darkColor="transparent"
+          >
+            <ThemedText
+              type="defaultSemiBold"
+              style={styles.emergencyTitle}
+              lightColor="#333"
+              darkColor="#fff"
+            >
+              Emergency Information
+            </ThemedText>
+            <ThemedText
+              style={styles.emergencyText}
+              lightColor="#666"
+              darkColor="#ccc"
+            >
+              {medication.communication.overdoseInstructions || 
+               "In case of overdose: Call 911 or Poison Control at 1-800-222-1222"}
+            </ThemedText>
+          </ThemedView>
+        </ThemedView>
+      </ThemedView>
+    );
+  };
+
   if (loading) {
     return (
       <ThemedView
@@ -313,11 +476,11 @@ export default function MedicationDetailPage() {
         >
           {/* Status Banner */}
           <ThemedView
-            style={[styles.statusBanner, { borderColor: getStatusColor() }]}
+            style={[styles.statusBanner, { backgroundColor: getStatusColor() }]}
           >
             <ThemedText
               type="defaultSemiBold"
-              style={[styles.statusText, { color: getStatusColor() }]}
+              style={styles.statusText}
             >
               {getStatusText()}
             </ThemedText>
@@ -474,7 +637,8 @@ export default function MedicationDetailPage() {
           )}
 
           {/* Storage & Disposal - Only show if there's content */}
-          {(medication?.storage?.expirationDate ||
+          {(medication?.storage?.instructions ||
+            medication?.storage?.location ||
             medication?.storage?.disposalInstructions) && (
             <ThemedView
               style={styles.section}
@@ -499,12 +663,19 @@ export default function MedicationDetailPage() {
                   medication.storage.instructions
                 )}
                 {renderDetailRow(
+                  "Storage Location",
+                  medication.storage.location
+                )}
+                {renderDetailRow(
                   "Disposal Method",
                   medication.storage.disposalInstructions
                 )}
               </ThemedView>
             </ThemedView>
           )}
+
+          {/* Communication & Safety Section */}
+          {renderCommunicationSection()}
 
           {/* Metadata */}
           <ThemedView
@@ -561,11 +732,11 @@ export default function MedicationDetailPage() {
             </ThemedText>
           </TouchableOpacity>
           
-          <TouchableOpacity style={styles.editButton} onPress={handleEdit}>
+          {/* <TouchableOpacity style={styles.editButton} onPress={handleEdit}>
             <ThemedText type="defaultSemiBold" style={styles.editButtonText}>
               Edit Medication
             </ThemedText>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
         </ThemedView>
 
         {/* Delete Confirmation Modals */}
@@ -610,9 +781,8 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderBottomWidth: 1,
     borderBottomColor: "#e0e0e0",
-    marginTop: Platform.OS === "web" ? 0 : 48,
+    marginTop: Platform.OS === "android" ? 48 : 0,
   },
-
   headerSpacer: {
     minWidth: 0,
   },
@@ -645,10 +815,10 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     alignItems: "center",
     borderRadius: 8,
-    borderWidth: 2,
-    backgroundColor: "transparent",
   },
-  statusText: {},
+  statusText: {
+    color: "#e0e0e0",
+  },
   section: {
     marginHorizontal: 16,
     marginVertical: 8,
@@ -684,6 +854,85 @@ const styles = StyleSheet.create({
   importantValue: {
     fontWeight: "600",
     color: "#f78b33",
+  },
+  contactSection: {
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+  },
+  contactTitle: {
+    marginBottom: 8,
+    fontSize: 14,
+    color: "#f78b33",
+  },
+  questionSection: {
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+    borderLeftWidth: 3,
+    borderLeftColor: "#f78b33",
+  },
+  questionTitle: {
+    marginBottom: 6,
+    fontSize: 14,
+    color: "#f78b33",
+  },
+  questionText: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  schoolSection: {
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+  },
+  schoolTitle: {
+    marginBottom: 6,
+    fontSize: 14,
+    color: "#f78b33",
+  },
+  schoolText: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  additionalSection: {
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+  },
+  additionalTitle: {
+    marginBottom: 6,
+    fontSize: 14,
+    color: "#f78b33",
+  },
+  additionalText: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  emergencySection: {
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+    borderLeftWidth: 3,
+    borderLeftColor: "#D54C4C",
+  },
+  emergencyTitle: {
+    marginBottom: 6,
+    fontSize: 14,
+    color: "#D54C4C",
+  },
+  emergencyText: {
+    fontSize: 13,
+    lineHeight: 18,
   },
   bottomSpacer: {
     height: 20,

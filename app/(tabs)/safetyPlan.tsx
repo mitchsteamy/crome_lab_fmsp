@@ -1,6 +1,6 @@
 import { useFocusEffect } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
-import { Alert, Platform, ScrollView, Share, StyleSheet } from "react-native";
+import { Alert, Platform, ScrollView, StyleSheet } from "react-native";
 import { ThemedView } from "../../components/common/ThemedView";
 import { ThemedText } from "../../components/common/ThemedText";
 import ExportControls from "../../components/safetyPlan/ExportControls";
@@ -16,14 +16,21 @@ import { StorageService } from "../../services/StorageService";
 import { Medication } from "../../types/Medication";
 import { DateUtils } from "../../utils/dateUtils";
 
+interface SafetyPlanStats {
+  totalMedications: number;
+  activeMedications: number;
+  expiredMedications: number;
+  patients: string[];
+}
+
 export default function SafetyPlanTab() {
   const [medications, setMedications] = useState<Medication[]>([]);
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({
+  const [stats, setStats] = useState<SafetyPlanStats>({
     totalMedications: 0,
     activeMedications: 0,
     expiredMedications: 0,
-    patients: [] as string[],
+    patients: [],
   });
 
   // Load data when component mounts
@@ -53,38 +60,6 @@ export default function SafetyPlanTab() {
       Alert.alert("Error", "Failed to load safety plan data");
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleExportPDF = async () => {
-    try {
-      const safetyPlanData = await StorageService.exportAllData();
-      await Share.share({
-        message: safetyPlanData,
-        title: "Medication Safety Plan",
-      });
-    } catch (error) {
-      Alert.alert("Export Error", "Failed to export safety plan");
-    }
-  };
-
-  const handleEmailShare = async () => {
-    try {
-      const safetyPlanData = await StorageService.exportAllData();
-      const subject = `Medication Safety Plan - ${DateUtils.formatDate(
-        new Date(),
-        "short"
-      )}`;
-
-      await Share.share({
-        message: `Medication Safety Plan\n\nGenerated on: ${DateUtils.formatDate(
-          new Date(),
-          "long"
-        )}\n\n${safetyPlanData}`,
-        title: subject,
-      });
-    } catch (error) {
-      Alert.alert("Share Error", "Failed to share safety plan");
     }
   };
 
@@ -121,6 +96,7 @@ export default function SafetyPlanTab() {
       >
         <SafetyPlanHeader stats={stats} />
         <EmptyState />
+        <ExportControls medications={medications} stats={stats} />
       </ThemedView>
     );
   }
@@ -159,10 +135,7 @@ export default function SafetyPlanTab() {
         </ThemedView>
       </ScrollView>
 
-      <ExportControls
-        onExportPDF={handleExportPDF}
-        onEmailShare={handleEmailShare}
-      />
+      <ExportControls medications={medications} stats={stats} />
     </ThemedView>
   );
 }
@@ -170,7 +143,7 @@ export default function SafetyPlanTab() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    marginTop: Platform.OS === "web" ? 0 : 48,
+    marginTop: Platform.OS === "android" ? 48 : 0,
   },
   scrollView: {
     flex: 1,

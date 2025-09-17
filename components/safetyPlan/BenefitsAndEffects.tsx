@@ -9,7 +9,9 @@ interface BenefitsAndEffectsProps {
   medications: Medication[];
 }
 
-export default function BenefitsAndEffects({ medications }: BenefitsAndEffectsProps) {
+export default function BenefitsAndEffects({
+  medications,
+}: BenefitsAndEffectsProps) {
   const benefitsContent = medications
     .filter((med) => med.benefits)
     .map((med) => (
@@ -90,11 +92,18 @@ export default function BenefitsAndEffects({ medications }: BenefitsAndEffectsPr
 const styles = StyleSheet.create({
   medicationEntry: {
     marginBottom: 16,
+    padding: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+    borderLeftWidth: 3,
+    borderLeftColor: "#f78b33",
   },
   medicationEntryTitle: {
     fontSize: 15,
     fontWeight: "600",
     marginBottom: 4,
+    color: "#f78b33",
   },
   medicationEntryContent: {
     fontSize: 14,

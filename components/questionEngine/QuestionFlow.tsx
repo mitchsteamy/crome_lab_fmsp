@@ -1,11 +1,6 @@
 import React from "react";
-import { 
-  StyleSheet, 
-  SafeAreaView, 
-  Platform, 
-  Alert, 
-} from "react-native";
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import { StyleSheet, Platform, Alert } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { useRouter } from "expo-router";
 import { ThemedView } from "../common/ThemedView";
 import QuestionFlowHeader from "./QuestionFlowHeader";
@@ -84,7 +79,7 @@ export default function QuestionFlow() {
       lightColor="#f5f5f5"
       darkColor="#1f1f1f"
     >
-      <SafeAreaView style={styles.safeArea}>
+      <ThemedView style={styles.safeArea}>
         <QuestionFlowHeader
           onCancel={handleCancel}
           progress={progress}
@@ -94,10 +89,10 @@ export default function QuestionFlow() {
         {!state.showInstructions && <ProgressBar progress={progress} />}
 
         <KeyboardAwareScrollView
-  style={styles.keyboardAvoidingContainer}
-  contentContainerStyle={{ flex: 1 }}
-  enableOnAndroid={true}
-  extraScrollHeight={20}
+          style={styles.keyboardAvoidingContainer}
+          contentContainerStyle={{ flex: 1 }}
+          enableOnAndroid={true}
+          extraScrollHeight={20}
         >
           <ThemedView
             style={styles.content}
@@ -123,7 +118,7 @@ export default function QuestionFlow() {
             progress={progress}
           />
         </KeyboardAwareScrollView>
-      </SafeAreaView>
+      </ThemedView>
     </ThemedView>
   );
 }
@@ -131,14 +126,16 @@ export default function QuestionFlow() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    alignItems: "center",
   },
   safeArea: {
     flex: 1,
-    marginTop: Platform.OS === "web" ? 0 : 48,
+    maxWidth: Platform.OS === "web" ? 470 : "100%",
+    marginTop: Platform.OS === "android" ? 48 : 0,
   },
   keyboardAvoidingContainer: {
     flex: 1,
-    paddingBottom: Platform.OS === "android" ? 48 : 0,
+    marginBottom: Platform.OS === "android" ? 48 : 0,
   },
   content: {
     flex: 1,
