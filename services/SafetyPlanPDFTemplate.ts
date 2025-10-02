@@ -12,24 +12,24 @@ interface SafetyPlanStats {
 export class SafetyPlanPDFTemplate {
   static generateHTML(medications: Medication[], stats: SafetyPlanStats): string {
     const currentDate = DateUtils.formatDate(new Date(), "long");
-    const patientNames = [...new Set(medications.map(med => med.patientName))];
+    const grouped = this.groupMedicationsByPatient(medications);
 
     return `
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Medication Safety Plan</title>
+    <title>Family Medicine Safety Plan</title>
     <style>
         @page {
-            margin: 0.5in;
-            size: letter;
+            margin: 0.4in 0.5in;
+            size: letter landscape;
         }
         
         body {
             font-family: Arial, sans-serif;
-            font-size: 10px;
-            line-height: 1.4;
+            font-size: 8px;
+            line-height: 1.2;
             color: #333;
             margin: 0;
             padding: 0;
@@ -37,338 +37,283 @@ export class SafetyPlanPDFTemplate {
         
         .header {
             text-align: center;
-            margin-bottom: 20px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid #333;
+            margin-bottom: 12px;
+            padding-bottom: 6px;
+            border-bottom: 2px solid #f78b33;
         }
         
         .header h1 {
-            margin: 0 0 5px 0;
-            font-size: 16px;
+            margin: 0 0 3px 0;
+            font-size: 14px;
             color: #333;
             font-weight: bold;
         }
         
         .header .subtitle {
-            font-size: 9px;
+            font-size: 8px;
             color: #666;
             margin: 0;
         }
         
-        .patient-info {
-            margin-bottom: 15px;
-            padding: 8px;
-            background: #f9f9f9;
-            border: 1px solid #ddd;
+        .patient-section {
+            margin-bottom: 12px;
         }
         
-        .patient-info h2 {
-            margin: 0 0 5px 0;
-            font-size: 12px;
-            color: #333;
+        .patient-header {
+            background: #f78b33;
+            color: white;
+            padding: 5px 8px;
+            margin-bottom: 8px;
+            font-size: 11px;
+            font-weight: bold;
+            border-radius: 3px;
+        }
+        
+        .medications-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-bottom: 12px;
         }
         
         .medication {
-            margin-bottom: 20px;
-            page-break-inside: avoid;
             border: 1px solid #ccc;
-            padding: 12px;
+            padding: 6px;
+            page-break-inside: avoid;
+            background: #fafafa;
         }
         
         .med-header {
-            margin-bottom: 8px;
-            padding-bottom: 5px;
+            margin-bottom: 4px;
+            padding-bottom: 3px;
             border-bottom: 1px solid #ddd;
         }
         
         .med-name {
-            font-size: 12px;
+            font-size: 9px;
             font-weight: bold;
-            color: #333;
-            margin: 0 0 2px 0;
+            color: #f78b33;
+            margin: 0;
         }
         
         .med-generic {
-            font-size: 9px;
+            font-size: 7px;
             color: #666;
             font-style: italic;
             margin: 0;
         }
         
-        .med-grid {
-            display: table;
-            width: 100%;
-            margin: 8px 0;
-        }
-        
-        .med-row {
-            display: table-row;
-        }
-        
-        .med-cell {
-            display: table-cell;
-            padding: 3px 8px 3px 0;
-            vertical-align: top;
-            border-bottom: 1px dotted #eee;
-        }
-        
-        .med-label {
-            font-weight: bold;
-            color: #555;
-            width: 25%;
-            font-size: 9px;
-        }
-        
-        .med-value {
-            color: #333;
-            font-size: 9px;
-        }
-        
-        .schedule-grid {
-            margin: 8px 0;
-            border: 1px solid #ddd;
-            background: #f8f8f8;
-        }
-        
-        .schedule-header {
-            background: #333;
-            color: white;
-            padding: 4px 8px;
-            font-weight: bold;
-            font-size: 9px;
-        }
-        
-        .schedule-content {
-            padding: 6px 8px;
-            font-size: 9px;
-        }
-        
-        .times-list {
+        .med-info {
             margin: 3px 0;
-            font-weight: bold;
         }
         
-        .safety-section {
-            margin: 8px 0;
-            padding: 6px 8px;
-            background: #fffbf0;
-            border-left: 3px solid #ff9800;
-        }
-        
-        .safety-title {
-            font-weight: bold;
-            font-size: 9px;
-            color: #333;
-            margin: 0 0 3px 0;
-        }
-        
-        .safety-content {
-            font-size: 8px;
-            color: #555;
+        .info-row {
             margin: 2px 0;
+            display: flex;
         }
         
-        .storage-section {
-            margin: 8px 0;
-            padding: 6px 8px;
-            background: #f0f8f0;
-            border-left: 3px solid #4caf50;
+        .info-label {
+            font-weight: bold;
+            color: #555;
+            min-width: 50px;
+            font-size: 7px;
         }
         
-        .contact-section {
-            margin: 8px 0;
-            padding: 6px 8px;
+        .info-value {
+            color: #333;
+            font-size: 7px;
+            flex: 1;
+        }
+        
+        .schedule-box {
+            margin: 3px 0;
+            padding: 3px;
+            background: #e8f4f8;
+            border-left: 2px solid #2196f3;
+            font-size: 7px;
+        }
+        
+        .schedule-times {
+            font-weight: bold;
+            color: #f78b33;
+            margin-top: 2px;
+        }
+        
+        .safety-box {
+            margin: 3px 0;
+            padding: 3px;
+            background: #fff9e6;
+            border-left: 2px solid #ff9800;
+            font-size: 7px;
+        }
+        
+        .contact-box {
+            margin: 3px 0;
+            padding: 3px;
             background: #f0f4ff;
-            border-left: 3px solid #2196f3;
+            border-left: 2px solid #2196f3;
+            font-size: 7px;
+        }
+        
+        .box-title {
+            font-weight: bold;
+            font-size: 7px;
+            margin-bottom: 2px;
         }
         
         .emergency-info {
-            margin-top: 20px;
-            padding: 10px;
+            margin-top: 12px;
+            padding: 6px;
             background: #fff3cd;
-            border: 1px solid #ffeaa7;
+            border: 1px solid #ffc107;
             page-break-inside: avoid;
         }
         
         .emergency-title {
             font-weight: bold;
-            font-size: 11px;
+            font-size: 9px;
             color: #856404;
-            margin: 0 0 5px 0;
+            margin: 0 0 3px 0;
         }
         
         .emergency-content {
-            font-size: 9px;
+            font-size: 7px;
             color: #856404;
+            line-height: 1.3;
         }
         
         .footer {
             position: fixed;
-            bottom: 0.25in;
-            left: 0;
-            right: 0;
+            bottom: 0.2in;
+            left: 0.5in;
+            right: 0.5in;
             text-align: center;
-            font-size: 7px;
+            font-size: 6px;
             color: #999;
             border-top: 1px solid #eee;
-            padding-top: 3px;
-        }
-        
-        @media print {
-            .page-break {
-                page-break-before: always;
-            }
+            padding-top: 2px;
         }
     </style>
 </head>
 <body>
     <div class="header">
-        <h1>Medication Safety Plan</h1>
-        <p class="subtitle">Generated ${currentDate} • ${medications.length} medication${medications.length !== 1 ? 's' : ''}</p>
+        <h1>Family Medicine Safety Plan</h1>
+        <p class="subtitle">Created ${currentDate} • ${medications.length} medicine${medications.length !== 1 ? 's' : ''}</p>
     </div>
 
-    ${patientNames.length > 0 ? `
-    <div class="patient-info">
-        <h2>Patient${patientNames.length > 1 ? 's' : ''}: ${patientNames.join(', ')}</h2>
-    </div>` : ''}
-
-    ${this.generateMedicationList(medications)}
+    ${this.generateMedicationsByPatient(grouped)}
     
     ${this.generateEmergencyInfo()}
 
     <div class="footer">
-        Medication Safety Plan • ${currentDate} • Keep accessible for emergencies
+        Family Medicine Safety Plan • ${currentDate} • Keep where you can find it easily
     </div>
 </body>
 </html>`;
   }
 
-  private static generateMedicationList(medications: Medication[]): string {
-    if (medications.length === 0) {
-      return `
-        <div style="text-align: center; padding: 40px; color: #666; font-size: 11px;">
-            No medications found in safety plan.
-        </div>`;
+  private static groupMedicationsByPatient(medications: Medication[]) {
+    const grouped = medications.reduce((acc, med) => {
+      const patientName = med.patientName || "Unknown";
+      if (!acc[patientName]) {
+        acc[patientName] = [];
+      }
+      acc[patientName].push(med);
+      return acc;
+    }, {} as Record<string, Medication[]>);
+
+    const sortedPatients = Object.keys(grouped).sort((a, b) => {
+      if (a === "Myself") return -1;
+      if (b === "Myself") return 1;
+      return a.localeCompare(b);
+    });
+
+    return { grouped, sortedPatients };
+  }
+
+  private static formatPlanTitle(name: string): string {
+    if (name === "Myself") {
+      return "My Plan";
+    }
+    return name.endsWith('s') ? `${name}' Plan` : `${name}'s Plan`;
+  }
+
+  private static generateMedicationsByPatient(grouped: { grouped: Record<string, Medication[]>, sortedPatients: string[] }): string {
+    if (grouped.sortedPatients.length === 0) {
+      return `<div style="text-align: center; padding: 40px; color: #666; font-size: 10px;">No medicines in plan yet.</div>`;
     }
 
-    return medications.map((med, index) => {
+    return grouped.sortedPatients.map((patientName) => {
+      const patientMeds = grouped.grouped[patientName];
+      
       return `
-        <div class="medication">
-            <div class="med-header">
-                <div class="med-name">${this.escapeHtml(med.brandName)}</div>
-                ${med.genericName && med.genericName !== med.brandName ? 
-                  `<div class="med-generic">${this.escapeHtml(med.genericName)}</div>` : ''}
+        <div class="patient-section">
+            <div class="patient-header">${this.escapeHtml(this.formatPlanTitle(patientName))}</div>
+            <div class="medications-grid">
+                ${patientMeds.map(med => this.generateCompactMedicationCard(med)).join('')}
             </div>
-            
-            <div class="med-grid">
-                <div class="med-row">
-                    <div class="med-cell med-label">Purpose:</div>
-                    <div class="med-cell med-value">${this.escapeHtml(med.reasonForUse)}</div>
-                </div>
-                
-                <div class="med-row">
-                    <div class="med-cell med-label">Dosage:</div>
-                    <div class="med-cell med-value">${this.escapeHtml(FormatUtils.formatDosage(med.dosageAmount, med.dosageUnit))}</div>
-                </div>
-                
-                <div class="med-row">
-                    <div class="med-cell med-label">Administration:</div>
-                    <div class="med-cell med-value">${this.escapeHtml(FormatUtils.formatAdministrationMethod(med.administrationMethod))}</div>
-                </div>
-                
-                <div class="med-row">
-                    <div class="med-cell med-label">Food Requirements:</div>
-                    <div class="med-cell med-value">${this.escapeHtml(FormatUtils.formatFoodRequirement(med.foodRequirement))}</div>
-                </div>
-                
-                <div class="med-row">
-                    <div class="med-cell med-label">Active Period:</div>
-                    <div class="med-cell med-value">
-                        ${DateUtils.formatDate(med.startDate, 'short')}${med.endDate ? ` to ${DateUtils.formatDate(med.endDate, 'short')}` : ' (ongoing)'}
-                    </div>
-                </div>
-            </div>
-
-            ${this.generateScheduleGrid(med)}
-            ${this.generateSafetyInfo(med)}
-            ${this.generateStorageInfo(med)}
-            ${this.generateContactInfo(med)}
         </div>`;
     }).join('');
   }
 
-  private static generateScheduleGrid(med: Medication): string {
-    if (!med.schedule || med.schedule.isAsNeeded) {
-      return `
-        <div class="schedule-grid">
-            <div class="schedule-header">Schedule</div>
-            <div class="schedule-content">Take as needed</div>
-        </div>`;
-    }
-
-    if (!med.schedule.doseTimes || med.schedule.doseTimes.length === 0) {
-      return `
-        <div class="schedule-grid">
-            <div class="schedule-header">Schedule</div>
-            <div class="schedule-content">${this.escapeHtml(FormatUtils.formatScheduleFrequency(med.schedule.frequency))}</div>
-        </div>`;
-    }
-
-    const times = FormatUtils.formatDoseTimes(med.schedule.doseTimes);
+  private static generateCompactMedicationCard(med: Medication): string {
+    const hasSchedule = med.schedule && !med.schedule.isAsNeeded && med.schedule.doseTimes && med.schedule.doseTimes.length > 0;
+    const hasSafety = med.benefits?.trim() || med.sideEffects?.trim() || med.drugInteractions?.trim() || med.foodInteractions?.trim();
+    const hasContact = med.communication?.primaryContact?.name?.trim() || med.communication?.primaryContact?.phone?.trim();
     
     return `
-      <div class="schedule-grid">
-          <div class="schedule-header">Daily Schedule</div>
-          <div class="schedule-content">
-              <div>${this.escapeHtml(FormatUtils.formatScheduleFrequency(med.schedule.frequency))}</div>
-              <div class="times-list">${this.escapeHtml(times)}</div>
+      <div class="medication">
+          <div class="med-header">
+              <div class="med-name">${this.escapeHtml(med.brandName)}</div>
+              ${med.genericName && med.genericName !== med.brandName ? 
+                `<div class="med-generic">${this.escapeHtml(med.genericName)}</div>` : ''}
           </div>
-      </div>`;
-  }
+          
+          <div class="med-info">
+              <div class="info-row">
+                  <div class="info-label">Why:</div>
+                  <div class="info-value">${this.escapeHtml(this.truncate(med.reasonForUse, 40))}</div>
+              </div>
+              
+              <div class="info-row">
+                  <div class="info-label">Dose:</div>
+                  <div class="info-value">${this.escapeHtml(FormatUtils.formatDosage(med.dosageAmount, med.dosageUnit))}${med.dosageStrength ? ` (${this.escapeHtml(med.dosageStrength)})` : ''}</div>
+              </div>
+              
+              <div class="info-row">
+                  <div class="info-label">How:</div>
+                  <div class="info-value">${this.escapeHtml(FormatUtils.formatAdministrationMethod(med.administrationMethod))}</div>
+              </div>
+              
+              <div class="info-row">
+                  <div class="info-label">Food:</div>
+                  <div class="info-value">${this.escapeHtml(FormatUtils.formatFoodRequirement(med.foodRequirement))}</div>
+              </div>
+          </div>
 
-  private static generateSafetyInfo(med: Medication): string {
-    const hasSafetyInfo = med.drugInteractions?.trim() || med.foodInteractions?.trim() || 
-                         med.benefits?.trim() || med.sideEffects?.trim();
-    
-    if (!hasSafetyInfo) return '';
+          ${hasSchedule ? `
+          <div class="schedule-box">
+              <div class="box-title">When: ${this.escapeHtml(FormatUtils.formatScheduleFrequency(med.schedule.frequency))}</div>
+              <div class="schedule-times">${this.escapeHtml(FormatUtils.formatDoseTimes(med.schedule.doseTimes))}</div>
+          </div>` : med.schedule?.isAsNeeded ? `
+          <div class="schedule-box">
+              <div class="box-title">When needed</div>
+          </div>` : ''}
 
-    return `
-      <div class="safety-section">
-          <div class="safety-title">Safety Information</div>
-          ${med.benefits?.trim() ? `<div class="safety-content"><strong>Benefits:</strong> ${this.escapeHtml(med.benefits)}</div>` : ''}
-          ${med.sideEffects?.trim() ? `<div class="safety-content"><strong>Side Effects:</strong> ${this.escapeHtml(med.sideEffects)}</div>` : ''}
-          ${med.drugInteractions?.trim() ? `<div class="safety-content"><strong>Drug Interactions:</strong> ${this.escapeHtml(med.drugInteractions)}</div>` : ''}
-          ${med.foodInteractions?.trim() ? `<div class="safety-content"><strong>Food Interactions:</strong> ${this.escapeHtml(med.foodInteractions)}</div>` : ''}
-      </div>`;
-  }
+          ${hasSafety ? `
+          <div class="safety-box">
+              <div class="box-title">Safety</div>
+              ${med.benefits?.trim() ? `<div><strong>Does:</strong> ${this.escapeHtml(this.truncate(med.benefits, 60))}</div>` : ''}
+              ${med.sideEffects?.trim() ? `<div><strong>Side effects:</strong> ${this.escapeHtml(this.truncate(med.sideEffects, 60))}</div>` : ''}
+              ${med.drugInteractions?.trim() ? `<div><strong>Drug interactions:</strong> ${this.escapeHtml(this.truncate(med.drugInteractions, 50))}</div>` : ''}
+          </div>` : ''}
 
-  private static generateStorageInfo(med: Medication): string {
-    const hasStorageInfo = med.storage?.instructions?.trim() || med.storage?.location?.trim() || 
-                          med.storage?.disposalInstructions?.trim() || med.storage?.expirationDate;
-    
-    if (!hasStorageInfo) return '';
-
-    return `
-      <div class="storage-section">
-          <div class="safety-title">Storage & Disposal</div>
-          ${med.storage?.instructions?.trim() ? `<div class="safety-content"><strong>Storage:</strong> ${this.escapeHtml(med.storage.instructions)}</div>` : ''}
-          ${med.storage?.location?.trim() ? `<div class="safety-content"><strong>Location:</strong> ${this.escapeHtml(med.storage.location)}</div>` : ''}
-          ${med.storage?.expirationDate ? `<div class="safety-content"><strong>Expires:</strong> ${DateUtils.formatDate(med.storage.expirationDate, 'short')}</div>` : ''}
-          ${med.storage?.disposalInstructions?.trim() ? `<div class="safety-content"><strong>Disposal:</strong> ${this.escapeHtml(med.storage.disposalInstructions)}</div>` : ''}
-      </div>`;
-  }
-
-  private static generateContactInfo(med: Medication): string {
-    if (!med.communication?.primaryContact?.name?.trim() && !med.communication?.primaryContact?.phone?.trim()) {
-      return '';
-    }
-
-    return `
-      <div class="contact-section">
-          <div class="safety-title">Healthcare Contact</div>
-          ${med.communication.primaryContact?.name?.trim() ? `<div class="safety-content"><strong>Name:</strong> ${this.escapeHtml(med.communication.primaryContact.name)}</div>` : ''}
-          ${med.communication.primaryContact?.phone?.trim() ? `<div class="safety-content"><strong>Phone:</strong> ${this.escapeHtml(med.communication.primaryContact.phone)}</div>` : ''}
-          ${med.communication?.questionsAboutMedication?.trim() ? `<div class="safety-content"><strong>Questions:</strong> ${this.escapeHtml(med.communication.questionsAboutMedication)}</div>` : ''}
+          ${hasContact ? `
+          <div class="contact-box">
+              <div class="box-title">Contact</div>
+              ${med.communication.primaryContact?.name?.trim() ? `<div><strong>${this.escapeHtml(med.communication.primaryContact.name)}</strong></div>` : ''}
+              ${med.communication.primaryContact?.phone?.trim() ? `<div>${this.escapeHtml(med.communication.primaryContact.phone)}</div>` : ''}
+          </div>` : ''}
       </div>`;
   }
 
@@ -377,15 +322,15 @@ export class SafetyPlanPDFTemplate {
       <div class="emergency-info">
           <div class="emergency-title">Emergency Information</div>
           <div class="emergency-content">
-              <strong>In case of overdose or poisoning:</strong><br>
-              • Call 911 for immediate emergency<br>
-              • Call Poison Control: 1-800-222-1222<br>
-              • Have this medication safety plan available when calling<br><br>
-              <strong>For medication questions:</strong><br>
-              • Contact your healthcare provider or pharmacist<br>
-              • Refer to the contact information listed for each medication above
+              <strong>Overdose/Poisoning:</strong> Call 911 or Poison Control (1-800-222-1222) • 
+              <strong>Medicine Questions:</strong> Contact your healthcare provider or pharmacist
           </div>
       </div>`;
+  }
+
+  private static truncate(text: string, maxLength: number): string {
+    if (!text || text.length <= maxLength) return text;
+    return text.slice(0, maxLength - 3) + '...';
   }
 
   private static escapeHtml(text: string): string {

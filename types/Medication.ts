@@ -14,24 +14,27 @@ export type AdministrationMethod =
 
 export type PrescriptionType = "prescription" | "over-the-counter";
 
-export type FoodRequirement = "with" | "before" | "after" | "none";
+// FIXED: Updated to match question flow exactly
+export type FoodRequirement = "with food" | "before food" | "after food" | "no food requirement";
 
+// FIXED: Changed "daily" to "every day" and added "as-needed"
 export type ScheduleFrequency =
-  | "daily"
+  | "every day"
   | "every-other-day"
   | "specific-days"
   | "every-x-days"
   | "every-x-weeks"
-  | "every-x-months";
+  | "every-x-months"
+  | "as-needed";
 
+// FIXED: Removed "as-needed" since it's in ScheduleFrequency
 export type DailyFrequency =
   | "once"
   | "twice"
   | "three-times"
   | "four-times"
   | "more-than-four"
-  | "every-x-hours"
-  | "as-needed";
+  | "every-x-hours";
 
 export interface DoseTime {
   hour: number;
@@ -43,7 +46,7 @@ export interface MedicationSchedule {
   frequency: ScheduleFrequency;
   dailyFrequency?: DailyFrequency;
   doseTimes: DoseTime[];
-  daysOfWeek?: number[]; // 0-6, Sunday = 0
+  daysOfWeek?: string[]; // e.g., ["Sunday", "Monday"]
   intervalDays?: number; // for every-x-days
   intervalWeeks?: number; // for every-x-weeks
   intervalMonths?: number; // for every-x-months
@@ -86,11 +89,12 @@ export interface Medication {
   brandName: string;
   genericName: string;
   reasonForUse: string;
-  prescriptionType: PrescriptionType; // This answers "Over-the-counter or prescription medicine?"
+  prescriptionType: PrescriptionType;
 
   // Dosage and Administration
   dosageAmount: string;
   dosageUnit: string;
+  dosageStrength: string; // NEW FIELD for dosage strength (e.g., "500mg")
   administrationMethod: AdministrationMethod;
 
   // Schedule - Enhanced to match PDF grid

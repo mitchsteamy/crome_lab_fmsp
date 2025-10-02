@@ -77,56 +77,76 @@ export const INSTRUCTION_PAGE: InstructionPage = {
   description: "Welcome to your personalized medication safety plan",
   logoSpace: true,
   instructions: [
-    "You may need to consult your medication container, your pharmacist, or the internet to answer some of these questions. Feel free to do so if necessary.",
-    "Answer each of the following questions to the best of your ability to add a medication.",
-    "When you are finished, your medication will be added to your Medication Safety Plan.",
-    "You can export your Medication Safety Plan for ease of use.",
+    "Let's add your medicine! We'll ask you some questions to build your safety plan.",
+    "Answer as best you can. It's okay to check your medicine bottle, ask your pharmacist for help, or look it up.",
+    "When you're done, we'll save your medicine to your plan.",
+    "You can print or share your plan anytime.",
   ],
 };
 
 // Basic Information section (starting with prescription type, brand name, generic name)
 export const BASIC_INFO_QUESTIONS: QuestionSection = {
   id: "basic_info",
-  title: "Basic Information",
-  description: "Let's start with the basic details about this medication",
+  title: "Basic Info",
+  description: "Let's start with some basics about your medicine",
   steps: [
+    {
+      id: "patient_relationship",
+      title: "Who Is This For?",
+      type: "select",
+      question: "Who is this medicine for?",
+      required: true,
+      options: ["myself", "other"],
+      helpText: "Let us know if this is for you or someone else",
+    },
+    {
+      id: "patient_name",
+      title: "Patient Name",
+      type: "text",
+      question: "What's their first name or nickname?",
+      required: true,
+      placeholder: "Like Sam, Mom, or Buddy",
+      helpText:
+        "Use a first name or nickname for privacy. Don't use full names.",
+      showIf: (answers) => answers.patient_relationship === "other",
+    },
     {
       id: "prescription_type",
       title: "Prescription Type",
       type: "select",
-      question: "Is this medication prescribed or over the counter?",
+      question: "Is this medicine a prescription or over-the-counter?",
       required: true,
       options: ["prescription", "over-the-counter"],
-      helpText:
-        "This will help you determine storage and disposal requirements",
+      helpText: "This helps us know how to store and dispose of it safely",
     },
     {
       id: "brand_name",
       title: "Brand Name",
       type: "text",
-      question: "What is the brand name of this medication?",
-      required: true,
-      placeholder: "e.g., Tylenol, Advil, Lipitor",
-      helpText: "This is the commercial name you see on the package",
+      question: "What's the brand name?",
+      required: false,
+      placeholder: "Like Tylenol, Advil, or Lipitor",
+      helpText:
+        "The name you see on the front of the package. You need either a brand name or generic name.",
     },
     {
       id: "generic_name",
       title: "Generic Name",
       type: "text",
-      question: "What is the generic name of this medication?",
+      question: "What's the generic name?",
       required: false,
-      placeholder: "e.g., acetaminophen, ibuprofen, atorvastatin",
-      helpText: "This is the scientific/chemical name, often in smaller print",
+      placeholder: "Like acetaminophen, ibuprofen, or atorvastatin",
+      helpText:
+        "Usually in smaller print. You need either a brand name or generic name.",
     },
     {
       id: "reason_for_use",
       title: "Reason for Use",
       type: "textarea",
-      question: "What is your reason for using this medication?",
+      question: "Why do you take this medicine?",
       required: true,
-      placeholder:
-        "e.g., headache relief, blood pressure control, diabetes management",
-      helpText: "Describe the condition or symptom being treated",
+      placeholder: "Like for headaches, blood pressure, or diabetes",
+      helpText: "Tell us what it helps with",
     },
   ],
 };
@@ -134,43 +154,51 @@ export const BASIC_INFO_QUESTIONS: QuestionSection = {
 // Dosage & Administration section
 export const DOSAGE_ADMIN_QUESTIONS: QuestionSection = {
   id: "dosage_admin",
-  title: "Dosage & Administration",
-  description: "How do you take this medication?",
+  title: "How You Take It",
+  description: "Tell us how you take this medicine",
   steps: [
     {
       id: "dosage_unit",
       title: "Dosage Unit",
       type: "select",
-      question: "What unit is your dosage measured in?",
+      question: "How is it measured?",
       required: true,
       options: [
         "tablet",
         "capsule",
         "teaspoon",
         "tablespoon",
-        "mL",
         "drops",
         "puff",
         "patch",
         "injection",
-        "other",
       ],
-      helpText: "Select the unit that matches your medication",
+      helpText: "Pick what matches your medicine",
     },
     {
       id: "dosage_amount",
-      title: "Dosage Amount",
+      title: "How Much",
       type: "text",
       question: "How much do you take each time?",
       required: true,
-      placeholder: "e.g., 1, 2, 1/2, 5",
-      helpText: "Enter the amount as written on your medication",
+      placeholder: "Like 1, 2, 1/2, or 5",
+      helpText: "Use the amount on your medicine bottle",
+    },
+    {
+      id: "dosage_strength",
+      title: "Strength",
+      type: "text",
+      question: "What's the strength of each dose?",
+      required: false,
+      placeholder: "Like 5mg, 250mg, 10mg/mL, or 500mg",
+      helpText:
+        "This is usually on your bottle. Like '5mg per tablet' or '250mg per teaspoon.' Leave blank if you're not sure.",
     },
     {
       id: "administration_method",
-      title: "Administration Method",
+      title: "How You Take It",
       type: "select",
-      question: "How is this medication administered?",
+      question: "How do you take it?",
       required: true,
       options: [
         "by mouth",
@@ -184,15 +212,14 @@ export const DOSAGE_ADMIN_QUESTIONS: QuestionSection = {
         "nasal",
         "vaginal",
         "rectal",
-        "other",
       ],
-      helpText: "Select how you take or apply this medication",
+      helpText: "Pick how you use this medicine",
     },
     {
       id: "food_requirement",
       title: "Food Requirements",
       type: "select",
-      question: "Should this medication be taken with food?",
+      question: "Do you take it with food?",
       required: true,
       options: [
         "before food",
@@ -200,7 +227,7 @@ export const DOSAGE_ADMIN_QUESTIONS: QuestionSection = {
         "after food",
         "no food requirement",
       ],
-      helpText: "Check your medication label or ask your pharmacist if unsure",
+      helpText: "Check your bottle or ask your pharmacist if you're not sure",
     },
   ],
 };
@@ -208,17 +235,17 @@ export const DOSAGE_ADMIN_QUESTIONS: QuestionSection = {
 // Schedule section
 export const SCHEDULE_QUESTIONS: QuestionSection = {
   id: "schedule",
-  title: "Medication Schedule",
-  description: "When and how often do you take this medication?",
+  title: "When You Take It",
+  description: "When and how often do you take this medicine?",
   steps: [
     {
       id: "schedule_frequency",
-      title: "Frequency",
+      title: "How Often",
       type: "select",
-      question: "How often do you take this medication?",
+      question: "How often do you take this medicine?",
       required: true,
       options: [
-        "daily",
+        "every day",
         "every-other-day",
         "specific-days",
         "every-x-days",
@@ -226,43 +253,43 @@ export const SCHEDULE_QUESTIONS: QuestionSection = {
         "every-x-months",
         "as-needed",
       ],
-      helpText: "Select the frequency that matches your prescription",
+      helpText: "Pick what matches your prescription", // Simpler
     },
     {
       id: "interval_days",
-      title: "Days Interval",
+      title: "Days Between Doses",
       type: "number",
       question: "How many days between doses?",
       required: true,
       placeholder: "Enter number of days",
-      helpText: "Enter the number of days between each dose",
+      helpText: "Like every 3 days, every 7 days, etc.",
       showIf: (answers) => answers.schedule_frequency === "every-x-days",
     },
     {
       id: "interval_weeks",
-      title: "Weeks Interval",
+      title: "Weeks Between Doses",
       type: "number",
       question: "How many weeks between doses?",
       required: true,
       placeholder: "Enter number of weeks",
-      helpText: "Enter the number of weeks between each dose",
+      helpText: "Like every 2 weeks, every 4 weeks, etc.",
       showIf: (answers) => answers.schedule_frequency === "every-x-weeks",
     },
     {
       id: "interval_months",
-      title: "Months Interval",
+      title: "Months Between Doses",
       type: "number",
       question: "How many months between doses?",
       required: true,
       placeholder: "Enter number of months",
-      helpText: "Enter the number of months between each dose",
+      helpText: "Like every 1 month, every 3 months, etc.",
       showIf: (answers) => answers.schedule_frequency === "every-x-months",
     },
     {
       id: "daily_frequency",
-      title: "Daily Frequency",
+      title: "Times Per Day",
       type: "select",
-      question: "How many times a day do you take this medication?",
+      question: "How many times a day do you take this medicine?",
       required: true,
       options: [
         "once",
@@ -273,23 +300,23 @@ export const SCHEDULE_QUESTIONS: QuestionSection = {
         "every-x-hours",
       ],
       helpText: "This helps set up your daily schedule",
-      showIf: (answers) => answers.schedule_frequency === "daily",
+      showIf: (answers) => answers.schedule_frequency === "every day",
     },
     {
       id: "interval_hours",
-      title: "Hours Interval",
+      title: "Hours Between",
       type: "number",
-      question: "How many hours between doses?",
+      question: "How many hours between each dose?",
       required: true,
       placeholder: "Enter number of hours",
-      helpText: "Enter the number of hours between each dose",
+      helpText: "Like every 4 hours, every 6 hours, etc.",
       showIf: (answers) => answers.daily_frequency === "every-x-hours",
     },
     {
       id: "specific_days",
-      title: "Specific Days",
+      title: "Which Days",
       type: "multiselect",
-      question: "On what days do you take this medication?",
+      question: "What days do you take this medicine?",
       required: true,
       options: [
         "Sunday",
@@ -307,24 +334,24 @@ export const SCHEDULE_QUESTIONS: QuestionSection = {
       id: "first_dose_time",
       title: "First Dose Time",
       type: "time",
-      question: "What time do you take your first dose?",
+      question: "What time is your first dose?",
       required: true,
-      helpText: "Select the time for your first daily dose",
+      helpText: "Pick the time for your first daily dose",
       showIf: (answers) =>
-        ["daily", "every-other-day", "specific-days"].includes(
+        ["every day", "every-other-day", "specific-days"].includes(
           answers.schedule_frequency
         ) && answers.daily_frequency !== "as-needed",
     },
     {
       id: "dose_times",
-      title: "Medication Times",
+      title: "Your Daily Times",
       type: "time-list",
-      question: "Review and adjust your daily medication times:",
+      question: "Check your daily times:",
       required: false,
       helpText:
-        "Tap any time to change it. These are calculated based on your first dose time and frequency.",
+        "Tap any time to change it. We calculated these based on when you take your first dose.",
       showIf: (answers) =>
-        ["daily", "every-other-day", "specific-days"].includes(
+        ["every day", "every-other-day", "specific-days"].includes(
           answers.schedule_frequency
         ) &&
         answers.daily_frequency &&
@@ -336,17 +363,17 @@ export const SCHEDULE_QUESTIONS: QuestionSection = {
       id: "start_date",
       title: "Start Date",
       type: "date",
-      question: "When did/will you start taking this medication?",
+      question: "When did you start taking this medicine?",
       required: true,
-      helpText: "Enter the date you started or will start this medication",
+      helpText: "Pick the date you started or will start",
     },
     {
       id: "end_date",
       title: "End Date",
       type: "date",
-      question: "When will you stop taking this medication?",
+      question: "When will you stop taking this medicine?",
       required: false,
-      helpText: "Leave blank if ongoing or unknown",
+      helpText: "Leave blank if you're not sure or if it's ongoing",
     },
   ],
 };
@@ -355,45 +382,44 @@ export const SCHEDULE_QUESTIONS: QuestionSection = {
 export const SAFETY_INFO_QUESTIONS: QuestionSection = {
   id: "safety_info",
   title: "Safety Information",
-  description: "Important safety information about this medication",
+  description: "Important safety information",
   steps: [
     {
       id: "benefits",
       title: "Benefits",
       type: "textarea",
-      question: "What are the benefits of this medication?",
+      question: "What does this medicine do for you?",
       required: false,
       placeholder:
-        "e.g., reduces pain, controls blood pressure, improves sleep",
-      helpText: "Describe what this medication does for you",
+        "Like reduces pain, helps you sleep, or controls blood pressure",
+      helpText: "Tell us how it helps",
     },
     {
       id: "side_effects",
       title: "Side Effects",
       type: "textarea",
-      question: "What are the potential side effects of this medication?",
+      question: "What are the side effects of this medicine?",
       required: false,
-      placeholder: "e.g., drowsiness, upset stomach, dizziness",
-      helpText: "List any side effects you've experienced or been warned about",
+      placeholder: "Like feeling sleepy, upset stomach, or dizziness",
+      helpText: "List any side effects you've had or been told about",
     },
     {
       id: "drug_interactions",
       title: "Drug Interactions",
       type: "textarea",
-      question: "Does this medication have any drug-drug interactions?",
+      question: "Does it interact with other medicines?",
       required: false,
-      placeholder:
-        "e.g., do not take with blood thinners, avoid with other pain medications",
-      helpText: "List medications that should not be taken with this one",
+      placeholder: "Like don't take with blood thinners or other pain medicine",
+      helpText: "List medicines you shouldn't take with this one",
     },
     {
       id: "food_interactions",
       title: "Food Interactions",
       type: "textarea",
-      question: "Does this medication have any food-drug interactions?",
+      question: "Does it interact with any foods?",
       required: false,
-      placeholder: "e.g., avoid alcohol, do not take with dairy products",
-      helpText: "List foods or drinks to avoid while taking this medication",
+      placeholder: "Like avoid alcohol or don't take with milk",
+      helpText: "List foods or drinks to avoid with this medicine",
     },
   ],
 };
@@ -402,46 +428,46 @@ export const SAFETY_INFO_QUESTIONS: QuestionSection = {
 export const STORAGE_DISPOSAL_QUESTIONS: QuestionSection = {
   id: "storage_disposal",
   title: "Storage & Disposal",
-  description: "How to properly store and dispose of this medication",
+  description: "How do you store and dispose of this medicine safely?",
   steps: [
     {
       id: "storage_instructions",
       title: "Storage Instructions",
       type: "textarea",
-      question:
-        "What are the instructions for properly storing this medication?",
+      question: "How should you store this medicine?",
       required: false,
       placeholder:
-        "e.g., store in cool, dry place; keep refrigerated; protect from light",
-      helpText: "Check your medication label for storage requirements",
+        "Like keep it cool and dry, in the fridge, or away from light",
+      helpText: "Check your medicine bottle for how to store it",
     },
     {
       id: "storage_location",
-      title: "Storage Location",
+      title: "Where You Keep It",
       type: "textarea",
-      question: "What is your plan for properly storing this medication?",
+      question: "Where will you keep this medicine?",
       required: false,
       placeholder:
         "e.g., medicine cabinet in bathroom, kitchen counter, refrigerator",
-      helpText: "Where do you plan to keep this medication safe?",
+      helpText: "Where do you plan to keep this medicine safe?",
     },
     {
       id: "expiration_date",
       title: "Expiration Date",
       type: "date",
-      question: "When does this medication expire?",
+      question: "When does it expire?",
       required: false,
-      helpText: "Check the expiration date on your medication package",
+      helpText:
+        "Check the date on your package. Leave blank if you're not sure.",
     },
     {
       id: "disposal_instructions",
       title: "Disposal Instructions",
       type: "textarea",
-      question: "What is the proper disposal technique for this medication?",
+      question: "How should you get rid of this medicine?",
       required: false,
       placeholder:
-        "e.g., return to pharmacy, use drug take-back program, flush down toilet",
-      helpText: "How should you safely dispose of unused medication?",
+        "Like return to pharmacy, use a take-back program, or flush it",
+      helpText: "How to safely get rid of unused medicine",
     },
   ],
 };
@@ -450,61 +476,55 @@ export const STORAGE_DISPOSAL_QUESTIONS: QuestionSection = {
 export const COMMUNICATION_SAFETY_QUESTIONS: QuestionSection = {
   id: "communication_safety",
   title: "Communication & Safety",
-  description: "Emergency contacts and safety plans",
+  description: "Who to contact if you have questions",
   steps: [
     {
       id: "school_plan",
       title: "School Plan",
       type: "textarea",
-      question: "What are your plans for using this medication in school?",
+      question: "How will you use this medicine at school?",
       required: false,
-      placeholder:
-        "e.g., kept in nurse's office, self-administered, not needed at school",
-      helpText: "Describe how this medication will be handled at school",
+      placeholder: "Like kept in nurse's office or you'll take it yourself",
+      helpText:
+        "Tell us your plan for this medicine at school. Leave blank if it doesn't apply.",
     },
     {
       id: "questions_about_medication",
-      title: "Questions or Concerns",
+      title: "Your Questions",
       type: "textarea",
-      question: "Do you have any questions or concerns about this medication?",
+      question: "Do you have any questions about this medicine?",
       required: false,
       placeholder:
-        "e.g., worried about side effects, unsure about timing, need dosage clarification",
-      helpText:
-        "List any questions you want to discuss with your healthcare provider",
+        "Like worried about side effects, not sure about timing, or need help with dosage",
+      helpText: "Write down questions to ask your doctor or pharmacist",
     },
     {
       id: "poc_name",
-      title: "Point of Contact Name",
+      title: "Who Can You Contact",
       type: "text",
-      question:
-        " Who is your main point of contact for questions/concerns about this medication?",
+      question: "Who should you call with questions?",
       required: true,
-      placeholder: "e.g., Dr. Abraham, Dr. Strong",
-      helpText:
-        "The name of the healthcare provider you would contact with questions about this medication ",
+      placeholder: "Like Dr. Smith or Dr. Jones",
+      helpText: "The doctor or pharmacist you'd call about this medicine",
     },
     {
       id: "poc_info",
-      title: "Point of Contact Information",
+      title: "Contact Info",
       type: "text",
-      question:
-        " What is the email or phone number for your main point of contact for questions/concerns about this medication?",
+      question: "What's their phone number or email?",
       required: true,
-      placeholder: "e.g., 859-867-5309, john.doe@uky.edu",
-      helpText:
-        "The contact info for the healthcare provider you would contact with questions about this medication ",
+      placeholder: "Like 859-867-5309 or john.doe@email.com",
+      helpText: "How to reach them",
     },
     {
       id: "additional_instructions",
-      title: "Additional Instructions",
+      title: "Other Instructions",
       type: "textarea",
-      question:
-        "Does this medication have any additional instructions for use?",
+      question: "Any other instructions for this medicine?",
       required: false,
       placeholder:
-        "e.g., take with full glass of water, do not crush or chew, shake well before use",
-      helpText: "Any other important instructions for taking this medication",
+        "Like take with a full glass of water, don't crush it, or shake well first",
+      helpText: "Anything else important about taking this medicine",
     },
   ],
 };
@@ -738,6 +758,18 @@ export function QuestionEngineProvider({
     const currentStep = getCurrentStep();
     if (!currentStep) return false;
 
+    // Special case: brand_name and generic_name - at least one is required
+    if (currentStep.id === "brand_name" || currentStep.id === "generic_name") {
+      const brandName = state.answers.brand_name;
+      const genericName = state.answers.generic_name;
+      // At least one must have a value
+      return (
+        (brandName && brandName.trim() !== "") ||
+        (genericName && genericName.trim() !== "")
+      );
+    }
+
+    // Standard validation for other required fields
     if (currentStep.required) {
       const answer = state.answers[currentStep.id];
       return answer !== undefined && answer !== "" && answer !== null;
@@ -819,7 +851,10 @@ export function QuestionEngineProvider({
 
     return {
       // Basic Information
-      patientName: "Patient", // Default since commented out
+      patientName:
+        answers.patient_relationship === "myself"
+          ? "Myself"
+          : answers.patient_name || "Patient",
       brandName: answers.brand_name || "",
       genericName: answers.generic_name || "",
       prescriptionType: answers.prescription_type || "over-the-counter",
@@ -828,12 +863,13 @@ export function QuestionEngineProvider({
       // Dosage & Administration
       dosageAmount: answers.dosage_amount || "1",
       dosageUnit: answers.dosage_unit || "tablet",
+      dosageStrength: answers.dosage_strength || "",
       administrationMethod: answers.administration_method || "by mouth",
-      foodRequirement: answers.food_requirement || "none",
+      foodRequirement: answers.food_requirement || "no food requirement",
 
       // Schedule
       schedule: {
-        frequency: answers.schedule_frequency || "daily",
+        frequency: answers.schedule_frequency || "every day",
         dailyFrequency: answers.daily_frequency,
         doseTimes: getDoseTimes(),
         daysOfWeek: answers.specific_days || [],

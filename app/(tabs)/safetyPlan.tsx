@@ -57,7 +57,7 @@ export default function SafetyPlanTab() {
       setStats(statsData);
     } catch (error) {
       console.error("Error loading safety plan data:", error);
-      Alert.alert("Error", "Failed to load safety plan data");
+      Alert.alert("Error", "Failed to load your plan");
     } finally {
       setLoading(false);
     }
@@ -80,7 +80,7 @@ export default function SafetyPlanTab() {
             lightColor="#666"
             darkColor="#999"
           >
-            Loading safety plan...
+            Loading your plan...
           </ThemedText>
         </ThemedView>
       </ThemedView>
@@ -102,11 +102,7 @@ export default function SafetyPlanTab() {
   }
 
   return (
-    <ThemedView
-      style={styles.container}
-      lightColor="#f5f5f5"
-      darkColor="#1f1f1f"
-    >
+    <ThemedView style={styles.container} lightColor="#f5f5f5">
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
@@ -129,7 +125,7 @@ export default function SafetyPlanTab() {
             lightColor="#666"
             darkColor="#999"
           >
-            This plan was generated on{" "}
+            This plan was created on{" "}
             {DateUtils.formatDate(new Date(), "datetime")}
           </ThemedText>
         </ThemedView>

@@ -26,16 +26,19 @@ export class FormatUtils {
   /**
    * Format administration method for display
    */
-  static formatAdministrationMethod(method: AdministrationMethod): string {
-    const methodMap: Record<AdministrationMethod, string> = {
-      'oral': 'By mouth',
-      'sublingual': 'Under tongue',
-      'buccal': 'Between cheek and gums',
-      'topical': 'Applied to skin',
+  static formatAdministrationMethod(method: string): string {
+    const methodMap: Record<string, string> = {
+      'by mouth': 'By mouth',
+      'under tongue': 'Under tongue',
+      'between cheek and gums': 'Between cheek and gums',
+      'inhaled into lungs': 'Inhaled',
+      'rubbed on skin': 'Applied to skin',
+      'injection': 'Injection',
+      'eye': 'In eye',
       'ear': 'In ear',
       'nasal': 'In nose',
-      'inhaled': 'Inhaled',
-      'injection': 'Injection',
+      'vaginal': 'Vaginal',
+      'rectal': 'Rectal',
       'other': 'Other'
     };
     
@@ -45,11 +48,12 @@ export class FormatUtils {
   /**
    * Format food requirement for display
    */
-  static formatFoodRequirement(requirement: FoodRequirement): string {
-    const requirementMap: Record<FoodRequirement, string> = {
-      'with': 'Take with food',
-      'before': 'Take before eating',
-      'after': 'Take after eating',
+  static formatFoodRequirement(requirement: string): string {
+    const requirementMap: Record<string, string> = {
+      'with food': 'With food',
+      'before food': 'Before eating',
+      'after food': 'After eating',
+      'no food requirement': 'No food restrictions',
       'none': 'No food restrictions'
     };
     
@@ -59,15 +63,16 @@ export class FormatUtils {
   /**
    * Format schedule frequency for display
    */
-  static formatScheduleFrequency(frequency: ScheduleFrequency): string {
-    const frequencyMap: Record<ScheduleFrequency, string> = {
-      'daily': 'Daily',
+  static formatScheduleFrequency(frequency: string): string {
+    const frequencyMap: Record<string, string> = {
+      'every day': 'Every day',
+      'daily': 'Every day',
       'specific-days': 'Specific days',
       'every-other-day': 'Every other day',
       'every-x-days': 'Every few days',
-      'every-x-weeks': 'Weekly',
-      'every-x-months': 'Monthly',
-      'as-needed': 'As needed'
+      'every-x-weeks': 'Every few weeks',
+      'every-x-months': 'Every few months',
+      'as-needed': 'When needed'
     };
     
     return frequencyMap[frequency] || frequency;
@@ -77,7 +82,7 @@ export class FormatUtils {
    * Format dose times for display
    */
   static formatDoseTimes(doseTimes: Array<{ hour: number; minute: number; label?: string }>): string {
-    if (doseTimes.length === 0) return 'No scheduled times';
+    if (doseTimes.length === 0) return 'No times set';
     
     return doseTimes
       .map(time => {
@@ -100,37 +105,49 @@ export class FormatUtils {
     return `${displayHour}:${minute.toString().padStart(2, '0')} ${period}`;
   }
 
-  /**
-   * Format days of week for display
-   */
-  static formatDaysOfWeek(days: number[]): string {
-    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    
-    if (days.length === 7) return 'Every day';
-    if (days.length === 0) return 'No days selected';
-    
-    // Check for weekdays only (Monday-Friday)
-    const weekdays = [1, 2, 3, 4, 5];
-    if (days.length === 5 && weekdays.every(day => days.includes(day))) {
-      return 'Weekdays';
-    }
-    
-    // Check for weekends only
-    const weekends = [0, 6];
-    if (days.length === 2 && weekends.every(day => days.includes(day))) {
-      return 'Weekends';
-    }
-    
-    return days
-      .sort((a, b) => a - b)
-      .map(day => dayNames[day])
-      .join(', ');
+/**
+ * Format days of week for display
+ */
+static formatDaysOfWeek(days: string[]): string {
+  if (days.length === 7) return 'Every day';
+  if (days.length === 0) return 'No days set';
+  
+  // Day order for sorting
+  const dayOrder = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const dayAbbr: Record<string, string> = {
+    'Sunday': 'Sun',
+    'Monday': 'Mon',
+    'Tuesday': 'Tue',
+    'Wednesday': 'Wed',
+    'Thursday': 'Thu',
+    'Friday': 'Fri',
+    'Saturday': 'Sat'
+  };
+  
+  // Check for weekdays only (Monday-Friday)
+  const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+  if (days.length === 5 && weekdays.every(day => days.includes(day))) {
+    return 'Weekdays';
   }
+  
+  // Check for weekends only
+  const weekends = ['Saturday', 'Sunday'];
+  if (days.length === 2 && weekends.every(day => days.includes(day))) {
+    return 'Weekends';
+  }
+  
+  // Sort days according to week order and abbreviate
+  return days
+    .sort((a, b) => dayOrder.indexOf(a) - dayOrder.indexOf(b))
+    .map(day => dayAbbr[day] || day)
+    .join(', ');
+}
 
   /**
    * Format patient name for display
    */
   static formatPatientName(name: string): string {
+    if (name === "Myself") return "Myself";
     return name
       .split(' ')
       .map(part => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
@@ -157,13 +174,13 @@ export class FormatUtils {
    */
   static formatScheduleSummary(schedule: any): string {
     if (schedule.isAsNeeded) {
-      return 'As needed';
+      return 'When needed';
     }
     
     const frequency = this.formatScheduleFrequency(schedule.frequency);
     const times = this.formatDoseTimes(schedule.doseTimes || []);
     
-    if (schedule.frequency === 'daily') {
+    if (schedule.frequency === 'daily' || schedule.frequency === 'every day') {
       return `${frequency} at ${times}`;
     } else if (schedule.frequency === 'specific-days') {
       const days = this.formatDaysOfWeek(schedule.daysOfWeek || []);
@@ -179,7 +196,8 @@ export class FormatUtils {
   static formatMedicationListItem(medication: any): string {
     const name = this.formatMedicationName(medication.brandName, medication.genericName);
     const dosage = this.formatDosage(medication.dosageAmount, medication.dosageUnit);
-    return `${name} - ${dosage}`;
+    const strength = medication.dosageStrength ? ` (${medication.dosageStrength})` : '';
+    return `${name} - ${dosage}${strength}`;
   }
 
   /**
@@ -227,6 +245,7 @@ export class FormatUtils {
    * Format initials from name
    */
   static formatInitials(name: string): string {
+    if (name === "Myself") return "Me";
     return name
       .split(' ')
       .map(part => part.charAt(0).toUpperCase())
@@ -240,7 +259,7 @@ export class FormatUtils {
     if (rate >= 95) return `${this.formatPercentage(rate)} (Excellent)`;
     if (rate >= 80) return `${this.formatPercentage(rate)} (Good)`;
     if (rate >= 60) return `${this.formatPercentage(rate)} (Fair)`;
-    return `${this.formatPercentage(rate)} (Poor)`;
+    return `${this.formatPercentage(rate)} (Needs improvement)`;
   }
 
   /**
@@ -286,14 +305,15 @@ export class FormatUtils {
    */
   static formatScheduleForExport(schedule: any): string {
     if (schedule.isAsNeeded) {
-      return 'Take as needed';
+      return 'Take when needed';
     }
     
     let result = '';
     
     switch (schedule.frequency) {
       case 'daily':
-        result = 'Take daily';
+      case 'every day':
+        result = 'Take every day';
         break;
       case 'specific-days':
         const days = this.formatDaysOfWeek(schedule.daysOfWeek || []);

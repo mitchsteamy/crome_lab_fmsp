@@ -30,7 +30,7 @@ export default function ExportControls({
   const generatePDFForWeb = async (): Promise<void> => {
     const htmlContent = SafetyPlanPDFTemplate.generateHTML(medications, stats);
     const currentDate = DateUtils.formatDate(new Date(), "short").replace(/\//g, "-");
-    const filename = `medication-safety-plan-${currentDate}.pdf`;
+    const filename = `family-medicine-plan-${currentDate}.pdf`;
     
     // Create a new window with our content and trigger print
     const printWindow = window.open('', '_blank');
@@ -82,7 +82,7 @@ export default function ExportControls({
       return uri;
     } catch (error) {
       console.error('Error generating PDF:', error);
-      throw new Error('Failed to generate PDF');
+      throw new Error('Failed to create PDF');
     }
   };
 
@@ -93,8 +93,8 @@ export default function ExportControls({
     try {
       if (medications.length === 0) {
         Alert.alert(
-          "No Medications", 
-          "Add some medications to your safety plan before creating a PDF."
+          "No Medicines Yet", 
+          "Add some medicines to your plan before creating a PDF."
         );
         return;
       }
@@ -108,8 +108,8 @@ export default function ExportControls({
         if (isEmailAvailable) {
           // Show options: Email or Save/Share
           Alert.alert(
-            "Share Safety Plan",
-            "How would you like to share your medication safety plan?",
+            "Share Your Plan",
+            "How would you like to share your family medicine plan?",
             [
               { text: "Cancel", style: "cancel" },
               { 
@@ -153,14 +153,21 @@ export default function ExportControls({
 
   const sendEmail = async (pdfUri: string) => {
     try {
+      // Get unique patient names, with "Myself" first
       const patientNames = [...new Set(medications.map(med => med.patientName))];
-      const patientNameList = patientNames.length > 1 
-        ? `${patientNames.slice(0, -1).join(', ')} and ${patientNames[patientNames.length - 1]}`
-        : patientNames[0] || 'Patient';
+      const sortedNames = patientNames.sort((a, b) => {
+        if (a === "Myself") return -1;
+        if (b === "Myself") return 1;
+        return a.localeCompare(b);
+      });
+      
+      const patientNameList = sortedNames.length > 1 
+        ? `${sortedNames.slice(0, -1).join(', ')} and ${sortedNames[sortedNames.length - 1]}`
+        : sortedNames[0] || 'Patient';
 
       await MailComposer.composeAsync({
-        subject: `Medication Safety Plan - ${patientNameList}`,
-        body: `Please find attached the medication safety plan for ${patientNameList}.\n\nThis plan includes:\n• ${medications.length} medication${medications.length !== 1 ? 's' : ''}\n• Dosing schedules and administration instructions\n• Storage and disposal information\n• Emergency contact information\n\nGenerated on ${DateUtils.formatDate(new Date(), "long")}\n\nPlease keep this information accessible for emergencies.`,
+        subject: `Family Medicine Safety Plan - ${patientNameList}`,
+        body: `Please find attached the family medicine safety plan for ${patientNameList}.\n\nThis plan includes:\n• ${medications.length} medicine${medications.length !== 1 ? 's' : ''}\n• When and how to take each medicine\n• How to store and dispose of medicines\n• Emergency contact information\n\nCreated on ${DateUtils.formatDate(new Date(), "long")}\n\nPlease keep this information where you can find it easily for emergencies.`,
         attachments: [pdfUri],
         isHtml: false,
       });
@@ -173,17 +180,17 @@ export default function ExportControls({
   const shareFile = async (pdfUri: string) => {
     try {
       const currentDate = DateUtils.formatDate(new Date(), "short").replace(/\//g, "-");
-      const filename = `medication-safety-plan-${currentDate}.pdf`;
+      const filename = `family-medicine-plan-${currentDate}.pdf`;
 
       await shareAsync(pdfUri, {
         mimeType: 'application/pdf',
-        dialogTitle: 'Share Medication Safety Plan',
+        dialogTitle: 'Share Family Medicine Plan',
         UTI: 'com.adobe.pdf',
       });
 
       Alert.alert(
-        "PDF Generated", 
-        `Your medication safety plan has been created successfully!\n\nFile: ${filename}`
+        "PDF Created", 
+        `Your family medicine plan has been created!\n\nFile: ${filename}`
       );
     } catch (error) {
       console.error('Share error:', error);
@@ -217,7 +224,7 @@ export default function ExportControls({
           lightColor="#f78b33"
           darkColor="#f78b33"
         >
-          {isProcessing ? "Creating PDF..." : Platform.OS === 'web' ? "Print/Download PDF" : "Share PDF"}
+          {isProcessing ? "Creating PDF..." : Platform.OS === 'web' ? "Save as PDF" : "Share PDF"}
         </ThemedText>
       </TouchableOpacity>
 
@@ -233,8 +240,8 @@ export default function ExportControls({
             darkColor="#999"
           >
             {Platform.OS === 'web' 
-              ? `PDF will include ${medications.length} medication${medications.length !== 1 ? 's' : ''} - use browser print to save as PDF`
-              : `PDF will include a complete safety plan for ${medications.length} medication${medications.length !== 1 ? 's' : ''}`
+              ? `PDF will include ${medications.length} medicine${medications.length !== 1 ? 's' : ''} - use browser print to save as PDF`
+              : `PDF will include a complete plan for ${medications.length} medicine${medications.length !== 1 ? 's' : ''}`
             }
           </ThemedText>
         </ThemedView>

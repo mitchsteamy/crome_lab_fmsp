@@ -108,7 +108,7 @@ const styles = StyleSheet.create({
   instructionTitle: {
     fontSize: 24,
     fontWeight: "600",
-    textAlign: "center",
+    //textAlign: "center",
     marginBottom: 24,
   },
   instructionsContent: {
@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
   instructionText: {
     fontSize: 16,
     lineHeight: 24,
-    textAlign: "center",
+    //textAlign: "center",
   },
   ctaContainer: {
     paddingTop: 16,

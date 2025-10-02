@@ -1,4 +1,4 @@
-import { Image, Platform, StyleSheet } from "react-native";
+import { Image, Platform, StyleSheet, useWindowDimensions } from "react-native";
 import { ThemedText } from "../common/ThemedText";
 import { ThemedView } from "../common/ThemedView";
 import { DateUtils } from "../../utils/dateUtils";
@@ -13,6 +13,16 @@ interface SafetyPlanHeaderProps {
 }
 
 export default function SafetyPlanHeader({ stats }: SafetyPlanHeaderProps) {
+  const { width } = useWindowDimensions();
+  const isSmallScreen = width < 768; 
+
+  const logoSource = isSmallScreen
+    ? require("../../assets/images/favicon.png")
+    : require("../../assets/images/logo.png");
+
+  const logoSize = isSmallScreen ? 48 : Platform.OS === "web" ? 250 : 200;
+  const logoHeight = isSmallScreen ? 48 : Platform.OS === "web" ? 85 : 68;
+
   return (
     <ThemedView style={styles.header} lightColor="#fff" darkColor="#2a2a2a">
       <ThemedView style={styles.title} lightColor="#fff" darkColor="#2a2a2a">
@@ -35,7 +45,7 @@ export default function SafetyPlanHeader({ stats }: SafetyPlanHeaderProps) {
                   lightColor="#333"
                   darkColor="#fff"
                 >
-                  Medication Safety Plan
+                  Family Medicine Safety Plan
                 </ThemedText>
                 <ThemedView style={styles.titleAccent} />
 
@@ -44,12 +54,15 @@ export default function SafetyPlanHeader({ stats }: SafetyPlanHeaderProps) {
                   lightColor="#666"
                   darkColor="#999"
                 >
-                  Generated on {DateUtils.formatDate(new Date(), "long")}
+                  Created on {DateUtils.formatDate(new Date(), "long")}
                 </ThemedText>
               </ThemedView>
               <Image
-                source={require("../../assets/images/logo.png")}
-                style={styles.headerLogo}
+                source={logoSource}
+                style={[
+                  styles.headerLogo,
+                  { width: logoSize, height: logoHeight },
+                ]}
                 resizeMode="contain"
               />
             </>
@@ -57,8 +70,11 @@ export default function SafetyPlanHeader({ stats }: SafetyPlanHeaderProps) {
             // Mobile layout: Logo above, Text below
             <>
               <Image
-                source={require("../../assets/images/logo.png")}
-                style={styles.headerLogo}
+                source={logoSource}
+                style={[
+                  styles.headerLogo,
+                  { width: logoSize, height: logoHeight },
+                ]}
                 resizeMode="contain"
               />
               <ThemedView
@@ -72,7 +88,7 @@ export default function SafetyPlanHeader({ stats }: SafetyPlanHeaderProps) {
                   lightColor="#333"
                   darkColor="#fff"
                 >
-                  Medication Safety Plan
+                  Family Medicine Safety Plan
                 </ThemedText>
                 <ThemedView style={styles.titleAccent} />
 
@@ -81,7 +97,7 @@ export default function SafetyPlanHeader({ stats }: SafetyPlanHeaderProps) {
                   lightColor="#666"
                   darkColor="#999"
                 >
-                  Generated on {DateUtils.formatDate(new Date(), "long")}
+                  Created on {DateUtils.formatDate(new Date(), "long")}
                 </ThemedText>
               </ThemedView>
             </>
@@ -94,7 +110,11 @@ export default function SafetyPlanHeader({ stats }: SafetyPlanHeaderProps) {
         lightColor="transparent"
         darkColor="transparent"
       >
-        <ThemedView style={styles.statCard} lightColor="#fff" darkColor="#333">
+        <ThemedView
+          style={styles.statCard}
+          lightColor="#f5f5f5"
+          darkColor="#333"
+        >
           <ThemedText
             style={styles.statNumber}
             lightColor="#333"
@@ -107,11 +127,15 @@ export default function SafetyPlanHeader({ stats }: SafetyPlanHeaderProps) {
             lightColor="#666"
             darkColor="#999"
           >
-            Active Medications
+            Current Medicines
           </ThemedText>
         </ThemedView>
 
-        <ThemedView style={styles.statCard} lightColor="#fff" darkColor="#333">
+        <ThemedView
+          style={styles.statCard}
+          lightColor="#f5f5f5"
+          darkColor="#333"
+        >
           <ThemedText
             style={styles.statNumber}
             lightColor="#333"
@@ -124,7 +148,28 @@ export default function SafetyPlanHeader({ stats }: SafetyPlanHeaderProps) {
             lightColor="#666"
             darkColor="#999"
           >
-            Inactive Medications
+            Expired Medicines
+          </ThemedText>
+        </ThemedView>
+
+        <ThemedView
+          style={styles.statCard}
+          lightColor="#f5f5f5"
+          darkColor="#333"
+        >
+          <ThemedText
+            style={styles.statNumber}
+            lightColor="#333"
+            darkColor="#fff"
+          >
+            {stats.patients.length}
+          </ThemedText>
+          <ThemedText
+            style={styles.statLabel}
+            lightColor="#666"
+            darkColor="#999"
+          >
+            {stats.patients.length === 1 ? "Person" : "People"}
           </ThemedText>
         </ThemedView>
       </ThemedView>

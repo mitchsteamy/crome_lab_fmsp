@@ -6,12 +6,16 @@ import {
   Alert,
   Image,
   Platform,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
-  TouchableOpacity,
 } from "react-native";
 import ConfirmDeleteModal from "../../components/common/ConfirmDeleteModal";
+import MedicationActionButtons from "../../components/medication/MedicationActionButton";
+import MedicationCommunicationSection from "../../components/medication/MedicationCommunicationSection";
+import MedicationDetailHeader from "../../components/medication/MedicationDetailHeader";
+import MedicationInfoSection from "../../components/medication/MedicationInfoSection";
+import MedicationScheduleSection from "../../components/medication/MedicationScheduleSection";
+import MedicationStatusBanner from "../../components/medication/MedicationStatusBanner";
 import { StorageService } from "../../services/StorageService";
 import { Medication } from "../../types/Medication";
 import { DateUtils } from "../../utils/dateUtils";
@@ -24,6 +28,8 @@ export default function MedicationDetailPage() {
   const [showSecondConfirm, setShowSecondConfirm] = useState(false);
   const router = useRouter();
   const { id } = useLocalSearchParams();
+
+  console.log("Medication:", medication);
 
   useEffect(() => {
     loadMedication();
@@ -47,14 +53,13 @@ export default function MedicationDetailPage() {
   };
 
   const handleEdit = () => {
-    // For now, show that editing will be available later
     if (Platform.OS === "web") {
       alert(
         "Edit functionality will be available in the next update when we add editing to the question engine."
       );
     } else {
       Alert.alert(
-        "Edit Medication",
+        "Edit Medicine",
         "Edit functionality will be available in the next update when we add editing to the question engine.",
         [{ text: "OK" }]
       );
@@ -105,270 +110,6 @@ export default function MedicationDetailPage() {
     }
   };
 
-  const getStatusColor = () => {
-    if (!medication) return "#999";
-    if (!medication.isActive) return "#999";
-    if (medication.isExpired) return "#D54C4C";
-    if (
-      medication?.storage?.expirationDate &&
-      DateUtils.isExpiringSoon(medication.storage.expirationDate)
-    ) {
-      return "#ff9900";
-    }
-    return "#4CAF50";
-  };
-
-  const getStatusText = () => {
-    if (!medication) return "Unknown";
-    if (!medication.isActive) return "Inactive";
-    if (medication.isExpired) return "Expired";
-    if (
-      medication?.storage?.expirationDate &&
-      DateUtils.isExpiringSoon(medication.storage.expirationDate)
-    ) {
-      return "Expiring Soon";
-    }
-    return "Active";
-  };
-
-  const renderDetailRow = (
-    label: string,
-    value: string | undefined,
-    important: boolean = false
-  ) => {
-    if (!value) return null;
-
-    return (
-      <ThemedView
-        style={styles.detailRow}
-        lightColor="transparent"
-        darkColor="transparent"
-      >
-        <ThemedText
-          type="defaultSemiBold"
-          lightColor="#666"
-          darkColor="#ccc"
-          style={styles.detailLabel}
-        >
-          {label}:
-        </ThemedText>
-        <ThemedText
-          type="default"
-          style={[styles.detailValue, important && styles.importantValue]}
-          lightColor="#333"
-          darkColor="#e0e0e0"
-        >
-          {value}
-        </ThemedText>
-      </ThemedView>
-    );
-  };
-
-  const renderScheduleDetails = () => {
-    if (!medication?.schedule) return null;
-
-    return (
-      <ThemedView style={styles.section} lightColor="#fff" darkColor="#2a2a2a">
-        <ThemedText
-          type="subtitle"
-          style={styles.sectionTitle}
-          lightColor="#333"
-          darkColor="#fff"
-        >
-          Schedule
-        </ThemedText>
-        <ThemedView
-          style={styles.sectionContent}
-          lightColor="transparent"
-          darkColor="transparent"
-        >
-          {renderDetailRow(
-            "Frequency",
-            FormatUtils.formatScheduleFrequency(medication.schedule.frequency)
-          )}
-          {medication.schedule.doseTimes &&
-            medication.schedule.doseTimes.length > 0 &&
-            renderDetailRow(
-              "Times",
-              FormatUtils.formatDoseTimes(medication.schedule.doseTimes)
-            )}
-          {medication.schedule.daysOfWeek &&
-            renderDetailRow(
-              "Days",
-              FormatUtils.formatDaysOfWeek(medication.schedule.daysOfWeek)
-            )}
-          {renderDetailRow(
-            "As needed",
-            medication.schedule.isAsNeeded ? "Yes" : "No"
-          )}
-        </ThemedView>
-      </ThemedView>
-    );
-  };
-
-  const renderCommunicationSection = () => {
-    if (!medication?.communication) return null;
-
-    const hasCommunicationData = 
-      medication.communication.primaryContact?.name?.trim() ||
-      medication.communication.primaryContact?.phone?.trim() ||
-      medication.communication.questionsAboutMedication?.trim() ||
-      medication.communication.schoolPlan?.trim() ||
-      medication.communication.additionalConcerns?.trim();
-
-    if (!hasCommunicationData) return null;
-
-    return (
-      <ThemedView style={styles.section} lightColor="#fff" darkColor="#2a2a2a">
-        <ThemedText
-          type="subtitle"
-          style={styles.sectionTitle}
-          lightColor="#333"
-          darkColor="#fff"
-        >
-          Communication & Safety
-        </ThemedText>
-        <ThemedView
-          style={styles.sectionContent}
-          lightColor="transparent"
-          darkColor="transparent"
-        >
-          {/* Primary Contact */}
-          {(medication.communication.primaryContact?.name?.trim() || 
-            medication.communication.primaryContact?.phone?.trim()) && (
-            <ThemedView
-              style={styles.contactSection}
-              lightColor="transparent"
-              darkColor="transparent"
-            >
-              <ThemedText
-                type="defaultSemiBold"
-                style={styles.contactTitle}
-                lightColor="#333"
-                darkColor="#fff"
-              >
-                Primary Contact
-              </ThemedText>
-              {renderDetailRow(
-                "Name",
-                medication.communication.primaryContact?.name,
-                true
-              )}
-              {renderDetailRow(
-                "Phone",
-                medication.communication.primaryContact?.phone,
-                true
-              )}
-              {renderDetailRow(
-                "Role",
-                medication.communication.primaryContact?.role || "Healthcare Provider"
-              )}
-            </ThemedView>
-          )}
-
-          {/* Questions About Medication */}
-          {medication.communication.questionsAboutMedication?.trim() && (
-            <ThemedView
-              style={styles.questionSection}
-              lightColor="transparent"
-              darkColor="transparent"
-            >
-              <ThemedText
-                type="defaultSemiBold"
-                style={styles.questionTitle}
-                lightColor="#333"
-                darkColor="#fff"
-              >
-                Questions & Concerns
-              </ThemedText>
-              <ThemedText
-                style={styles.questionText}
-                lightColor="#666"
-                darkColor="#ccc"
-              >
-                {medication.communication.questionsAboutMedication}
-              </ThemedText>
-            </ThemedView>
-          )}
-
-          {/* School Plan */}
-          {medication.communication.schoolPlan?.trim() && (
-            <ThemedView
-              style={styles.schoolSection}
-              lightColor="transparent"
-              darkColor="transparent"
-            >
-              <ThemedText
-                type="defaultSemiBold"
-                style={styles.schoolTitle}
-                lightColor="#333"
-                darkColor="#fff"
-              >
-                School Plan
-              </ThemedText>
-              <ThemedText
-                style={styles.schoolText}
-                lightColor="#666"
-                darkColor="#ccc"
-              >
-                {medication.communication.schoolPlan}
-              </ThemedText>
-            </ThemedView>
-          )}
-
-          {/* Additional Concerns */}
-          {medication.communication.additionalConcerns?.trim() && (
-            <ThemedView
-              style={styles.additionalSection}
-              lightColor="transparent"
-              darkColor="transparent"
-            >
-              <ThemedText
-                type="defaultSemiBold"
-                style={styles.additionalTitle}
-                lightColor="#333"
-                darkColor="#fff"
-              >
-                Additional Instructions
-              </ThemedText>
-              <ThemedText
-                style={styles.additionalText}
-                lightColor="#666"
-                darkColor="#ccc"
-              >
-                {medication.communication.additionalConcerns}
-              </ThemedText>
-            </ThemedView>
-          )}
-
-          {/* Emergency Instructions */}
-          <ThemedView
-            style={styles.emergencySection}
-            lightColor="transparent"
-            darkColor="transparent"
-          >
-            <ThemedText
-              type="defaultSemiBold"
-              style={styles.emergencyTitle}
-              lightColor="#333"
-              darkColor="#fff"
-            >
-              Emergency Information
-            </ThemedText>
-            <ThemedText
-              style={styles.emergencyText}
-              lightColor="#666"
-              darkColor="#ccc"
-            >
-              {medication.communication.overdoseInstructions || 
-               "In case of overdose: Call 911 or Poison Control at 1-800-222-1222"}
-            </ThemedText>
-          </ThemedView>
-        </ThemedView>
-      </ThemedView>
-    );
-  };
-
   if (loading) {
     return (
       <ThemedView
@@ -376,32 +117,18 @@ export default function MedicationDetailPage() {
         lightColor="#f5f5f5"
         darkColor="#1f1f1f"
       >
-        <SafeAreaView style={styles.safeArea}>
-          <ThemedView
-            style={styles.header}
-            lightColor="#fff"
-            darkColor="#1f1f1f"
-          >
-            <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-              <ThemedText type="link">← Back</ThemedText>
-            </TouchableOpacity>
-            <ThemedText type="subtitle">Loading...</ThemedText>
-            <ThemedView
-              style={styles.headerSpacer}
-              lightColor="transparent"
-              darkColor="transparent"
-            />
-          </ThemedView>
+        <ThemedView style={styles.safeArea}>
+          <MedicationDetailHeader title="Loading..." onBack={handleBack} />
           <ThemedView
             style={styles.loadingContainer}
             lightColor="transparent"
             darkColor="transparent"
           >
             <ThemedText type="default" lightColor="#666" darkColor="#999">
-              Loading medication details...
+              Loading medicine details...
             </ThemedText>
           </ThemedView>
-        </SafeAreaView>
+        </ThemedView>
       </ThemedView>
     );
   }
@@ -413,35 +140,18 @@ export default function MedicationDetailPage() {
         lightColor="#f5f5f5"
         darkColor="#1f1f1f"
       >
-        <SafeAreaView style={styles.safeArea}>
-          <ThemedView
-            style={styles.header}
-            lightColor="#fff"
-            darkColor="#1f1f1f"
-          >
-            <TouchableOpacity
-              onPress={() => router.back()}
-              style={styles.backButton}
-            >
-              <ThemedText type="link">← Back</ThemedText>
-            </TouchableOpacity>
-            <ThemedText type="subtitle">Not Found</ThemedText>
-            <ThemedView
-              style={styles.headerSpacer}
-              lightColor="transparent"
-              darkColor="transparent"
-            />
-          </ThemedView>
+        <ThemedView style={styles.safeArea}>
+          <MedicationDetailHeader title="Not Found" onBack={handleBack} />
           <ThemedView
             style={styles.errorContainer}
             lightColor="transparent"
             darkColor="transparent"
           >
             <ThemedText type="default" style={styles.errorText}>
-              Medication not found
+              Medicine not found
             </ThemedText>
           </ThemedView>
-        </SafeAreaView>
+        </ThemedView>
       </ThemedView>
     );
   }
@@ -452,260 +162,151 @@ export default function MedicationDetailPage() {
       lightColor="#f5f5f5"
       darkColor="#1f1f1f"
     >
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.header} lightColor="#fff" darkColor="#1f1f1f">
-          <TouchableOpacity
-            onPress={() => router.back()}
-            style={styles.backButton}
-          >
-            <ThemedText type="link">← Back</ThemedText>
-          </TouchableOpacity>
-          <ThemedText type="subtitle" numberOfLines={1}>
-            {medication.brandName}
-          </ThemedText>
-          <ThemedView
-            style={styles.headerSpacer}
-            lightColor="transparent"
-            darkColor="transparent"
-          />
-        </ThemedView>
+      <ThemedView style={styles.safeArea} lightColor="#f5f5f5">
+        <MedicationDetailHeader
+          title={medication.brandName}
+          onBack={handleBack}
+        />
 
         <ScrollView
           style={styles.scrollView}
           showsVerticalScrollIndicator={false}
         >
-          {/* Status Banner */}
-          <ThemedView
-            style={[styles.statusBanner, { backgroundColor: getStatusColor() }]}
-          >
-            <ThemedText
-              type="defaultSemiBold"
-              style={styles.statusText}
-            >
-              {getStatusText()}
-            </ThemedText>
-          </ThemedView>
+          <MedicationStatusBanner medication={medication} />
 
           {/* Basic Information */}
-          <ThemedView
-            style={styles.section}
-            lightColor="#fff"
-            darkColor="#2a2a2a"
-          >
-            <ThemedText
-              type="subtitle"
-              style={styles.sectionTitle}
-              lightColor="#333"
-              darkColor="#fff"
-            >
-              Basic Information
-            </ThemedText>
-            <ThemedView
-              style={styles.sectionContent}
-              lightColor="transparent"
-              darkColor="transparent"
-            >
-              {renderDetailRow("Brand Name", medication.brandName, true)}
-              {renderDetailRow("Generic Name", medication.genericName)}
-              {renderDetailRow("Reason for Use", medication.reasonForUse, true)}
-              {renderDetailRow(
-                "Type",
-                FormatUtils.formatPrescriptionType(medication.prescriptionType)
-              )}
-            </ThemedView>
-          </ThemedView>
+          <MedicationInfoSection
+            title="Basic Info"
+            details={[
+              {
+                label: "Brand name",
+                value: medication.brandName,
+                important: true,
+              },
+              { label: "Generic name", value: medication.genericName },
+              {
+                label: "Why you take it",
+                value: medication.reasonForUse,
+                important: true,
+              },
+              {
+                label: "Type",
+                value: FormatUtils.formatPrescriptionType(
+                  medication.prescriptionType
+                ),
+              },
+            ]}
+          />
 
           {/* Dosage & Administration */}
-          <ThemedView
-            style={styles.section}
-            lightColor="#fff"
-            darkColor="#2a2a2a"
-          >
-            <ThemedText
-              type="subtitle"
-              style={styles.sectionTitle}
-              lightColor="#333"
-              darkColor="#fff"
-            >
-              Dosage & Administration
-            </ThemedText>
-            <ThemedView
-              style={styles.sectionContent}
-              lightColor="transparent"
-              darkColor="transparent"
-            >
-              {renderDetailRow(
-                "Dosage",
-                FormatUtils.formatDosage(
+          <MedicationInfoSection
+            title="How You Take It"
+            details={[
+              {
+                label: "How much",
+                value: `${FormatUtils.formatDosage(
                   medication.dosageAmount,
                   medication.dosageUnit
-                ),
-                true
-              )}
-              {renderDetailRow(
-                "Administration",
-                FormatUtils.formatAdministrationMethod(
+                )}${medication.dosageStrength ? ` (${medication.dosageStrength})` : ""}`,
+                important: true,
+              },
+              {
+                label: "How you take it",
+                value: FormatUtils.formatAdministrationMethod(
                   medication.administrationMethod
-                )
-              )}
-              {renderDetailRow(
-                "Food Requirements",
-                FormatUtils.formatFoodRequirement(medication.foodRequirement)
-              )}
-            </ThemedView>
-          </ThemedView>
+                ),
+              },
+              {
+                label: "With food",
+                value: FormatUtils.formatFoodRequirement(
+                  medication.foodRequirement
+                ),
+              },
+            ]}
+          />
 
           {/* Schedule */}
-          {renderScheduleDetails()}
+          <MedicationScheduleSection medication={medication} />
 
           {/* Duration */}
-          <ThemedView
-            style={styles.section}
-            lightColor="#fff"
-            darkColor="#2a2a2a"
-          >
-            <ThemedText
-              type="subtitle"
-              style={styles.sectionTitle}
-              lightColor="#333"
-              darkColor="#fff"
-            >
-              Duration
-            </ThemedText>
-            <ThemedView
-              style={styles.sectionContent}
-              lightColor="transparent"
-              darkColor="transparent"
-            >
-              {renderDetailRow(
-                "Start Date",
-                DateUtils.formatDate(medication.startDate, "long")
-              )}
-              {renderDetailRow(
-                "End Date",
-                medication.endDate
+          <MedicationInfoSection
+            title="How Long"
+            details={[
+              {
+                label: "Started",
+                value: DateUtils.formatDate(medication.startDate, "long"),
+              },
+              {
+                label: "Ends",
+                value: medication.endDate
                   ? DateUtils.formatDate(medication.endDate, "long")
-                  : "Ongoing"
-              )}
-              {renderDetailRow(
-                "Expiration Date",
-                medication?.storage?.expirationDate
+                  : "Ongoing",
+              },
+              {
+                label: "Expires",
+                value: medication?.storage?.expirationDate
                   ? DateUtils.formatDate(
                       medication.storage.expirationDate,
                       "long"
                     )
-                  : "Not specified"
-              )}
-            </ThemedView>
-          </ThemedView>
+                  : "Not sure",
+              },
+            ]}
+          />
 
-          {/* Safety Information - Only show if there's content */}
-          {(medication.benefits ||
-            medication.sideEffects ||
-            medication.drugInteractions ||
-            medication.foodInteractions) && (
-            <ThemedView
-              style={styles.section}
-              lightColor="#fff"
-              darkColor="#2a2a2a"
-            >
-              <ThemedText
-                type="subtitle"
-                style={styles.sectionTitle}
-                lightColor="#333"
-                darkColor="#fff"
-              >
-                Safety Information
-              </ThemedText>
-              <ThemedView
-                style={styles.sectionContent}
-                lightColor="transparent"
-                darkColor="transparent"
-              >
-                {renderDetailRow("Benefits", medication.benefits)}
-                {renderDetailRow("Side Effects", medication.sideEffects)}
-                {renderDetailRow(
-                  "Drug Interactions",
-                  medication.drugInteractions
-                )}
-                {renderDetailRow(
-                  "Food Interactions",
-                  medication.foodInteractions
-                )}
-              </ThemedView>
-            </ThemedView>
-          )}
+          {/* Safety Information */}
+          <MedicationInfoSection
+            title="Safety Info"
+            details={[
+              { label: "What it does", value: medication.benefits },
+              { label: "Side effects", value: medication.sideEffects },
+              {
+                label: "Don't take with",
+                value: medication.drugInteractions,
+              },
+              {
+                label: "Don't eat or drink with",
+                value: medication.foodInteractions,
+              },
+            ]}
+          />
 
-          {/* Storage & Disposal - Only show if there's content */}
-          {(medication?.storage?.instructions ||
-            medication?.storage?.location ||
-            medication?.storage?.disposalInstructions) && (
-            <ThemedView
-              style={styles.section}
-              lightColor="#fff"
-              darkColor="#2a2a2a"
-            >
-              <ThemedText
-                type="subtitle"
-                style={styles.sectionTitle}
-                lightColor="#333"
-                darkColor="#fff"
-              >
-                Storage & Disposal
-              </ThemedText>
-              <ThemedView
-                style={styles.sectionContent}
-                lightColor="transparent"
-                darkColor="transparent"
-              >
-                {renderDetailRow(
-                  "Storage Instructions",
-                  medication.storage.instructions
-                )}
-                {renderDetailRow(
-                  "Storage Location",
-                  medication.storage.location
-                )}
-                {renderDetailRow(
-                  "Disposal Method",
-                  medication.storage.disposalInstructions
-                )}
-              </ThemedView>
-            </ThemedView>
-          )}
+          {/* Storage & Disposal */}
+          <MedicationInfoSection
+            title="Storage & Disposal"
+            details={[
+              {
+                label: "How to store it",
+                value: medication.storage?.instructions,
+              },
+              {
+                label: "Where you keep it",
+                value: medication.storage?.location,
+              },
+              {
+                label: "How to get rid of it",
+                value: medication.storage?.disposalInstructions,
+              },
+            ]}
+          />
 
           {/* Communication & Safety Section */}
-          {renderCommunicationSection()}
+          <MedicationCommunicationSection medication={medication} />
 
           {/* Metadata */}
-          <ThemedView
-            style={styles.section}
-            lightColor="#fff"
-            darkColor="#2a2a2a"
-          >
-            <ThemedText
-              type="subtitle"
-              style={styles.sectionTitle}
-              lightColor="#333"
-              darkColor="#fff"
-            >
-              Record Information
-            </ThemedText>
-            <ThemedView
-              style={styles.sectionContent}
-              lightColor="transparent"
-              darkColor="transparent"
-            >
-              {renderDetailRow(
-                "Added",
-                DateUtils.formatDate(medication.createdAt, "datetime")
-              )}
-              {renderDetailRow(
-                "Last Updated",
-                DateUtils.formatDate(medication.updatedAt, "datetime")
-              )}
-            </ThemedView>
-          </ThemedView>
+          <MedicationInfoSection
+            title="Record Info"
+            details={[
+              {
+                label: "Added",
+                value: DateUtils.formatDate(medication.createdAt, "datetime"),
+              },
+              {
+                label: "Last updated",
+                value: DateUtils.formatDate(medication.updatedAt, "datetime"),
+              },
+            ]}
+          />
 
           <ThemedView
             style={styles.bottomSpacer}
@@ -721,29 +322,13 @@ export default function MedicationDetailPage() {
         </ScrollView>
 
         {/* Action Buttons */}
-        <ThemedView
-          style={styles.actionButtons}
-          lightColor="#fff"
-          darkColor="#1f1f1f"
-        >
-          <TouchableOpacity style={styles.deleteButton} onPress={handleDelete}>
-            <ThemedText type="defaultSemiBold" style={styles.deleteButtonText}>
-              Delete Medication
-            </ThemedText>
-          </TouchableOpacity>
-          
-          {/* <TouchableOpacity style={styles.editButton} onPress={handleEdit}>
-            <ThemedText type="defaultSemiBold" style={styles.editButtonText}>
-              Edit Medication
-            </ThemedText>
-          </TouchableOpacity> */}
-        </ThemedView>
+        <MedicationActionButtons onDelete={handleDelete} />
 
         {/* Delete Confirmation Modals */}
         <ConfirmDeleteModal
           visible={showDeleteModal}
-          title="Delete Medication"
-          message={`Are you sure you want to delete "${medication?.brandName}"?\n\nThis will permanently remove this medication from your safety plan and cannot be undone.`}
+          title="Delete Medicine"
+          message={`Are you sure you want to delete "${medication?.brandName}"?\n\nThis will permanently remove this medicine from your safety plan and cannot be undone.`}
           onConfirm={handleFirstConfirm}
           onCancel={handleCancel}
         />
@@ -751,12 +336,12 @@ export default function MedicationDetailPage() {
         <ConfirmDeleteModal
           visible={showSecondConfirm}
           title="Confirm Deletion"
-          message={`This will permanently delete "${medication?.brandName}" from your medication list.`}
+          message={`This will permanently delete "${medication?.brandName}" from your medicine list.`}
           confirmText="Yes, Delete"
           onConfirm={handleSecondConfirm}
           onCancel={handleCancel}
         />
-      </SafeAreaView>
+      </ThemedView>
     </ThemedView>
   );
 }
@@ -767,24 +352,6 @@ const styles = StyleSheet.create({
   },
   safeArea: {
     flex: 1,
-  },
-  backButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 4,
-    minWidth: 60,
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#e0e0e0",
-    marginTop: Platform.OS === "android" ? 48 : 0,
-  },
-  headerSpacer: {
-    minWidth: 0,
   },
   headerLogo: {
     width: Platform.OS === "web" ? 250 : 200,
@@ -809,165 +376,7 @@ const styles = StyleSheet.create({
   errorText: {
     color: "#ff4444",
   },
-  statusBanner: {
-    marginTop: 8,
-    paddingVertical: 2,
-    marginHorizontal: 20,
-    alignItems: "center",
-    borderRadius: 8,
-  },
-  statusText: {
-    color: "#e0e0e0",
-  },
-  section: {
-    marginHorizontal: 16,
-    marginVertical: 8,
-    borderRadius: 12,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  sectionTitle: {
-    padding: 16,
-    paddingBottom: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: "#e0e0e0",
-  },
-  sectionContent: {
-    padding: 16,
-    paddingTop: 8,
-  },
-  detailRow: {
-    marginBottom: 12,
-  },
-  detailLabel: {
-    marginBottom: 4,
-  },
-  detailValue: {
-    lineHeight: 22,
-  },
-  importantValue: {
-    fontWeight: "600",
-    color: "#f78b33",
-  },
-  contactSection: {
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: "#e0e0e0",
-  },
-  contactTitle: {
-    marginBottom: 8,
-    fontSize: 14,
-    color: "#f78b33",
-  },
-  questionSection: {
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: "#e0e0e0",
-    borderLeftWidth: 3,
-    borderLeftColor: "#f78b33",
-  },
-  questionTitle: {
-    marginBottom: 6,
-    fontSize: 14,
-    color: "#f78b33",
-  },
-  questionText: {
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  schoolSection: {
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: "#e0e0e0",
-  },
-  schoolTitle: {
-    marginBottom: 6,
-    fontSize: 14,
-    color: "#f78b33",
-  },
-  schoolText: {
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  additionalSection: {
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: "#e0e0e0",
-  },
-  additionalTitle: {
-    marginBottom: 6,
-    fontSize: 14,
-    color: "#f78b33",
-  },
-  additionalText: {
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  emergencySection: {
-    padding: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#e0e0e0",
-    borderLeftWidth: 3,
-    borderLeftColor: "#D54C4C",
-  },
-  emergencyTitle: {
-    marginBottom: 6,
-    fontSize: 14,
-    color: "#D54C4C",
-  },
-  emergencyText: {
-    fontSize: 13,
-    lineHeight: 18,
-  },
   bottomSpacer: {
     height: 20,
-  },
-  actionButtons: {
-    flexDirection: "row",
-    borderTopWidth: 1,
-    borderTopColor: "#e0e0e0",
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    gap: 12,
-    marginBottom: Platform.OS === "web" ? 0 : 36,
-  },
-  editButton: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: "#f78b33",
-    borderRadius: 8,
-    paddingVertical: 14,
-    alignItems: "center",
-  },
-  editButtonText: {
-    fontWeight: "600",
-    color: "#f78b33",
-  },
-  deleteButton: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: "#D54C4C",
-    borderRadius: 8,
-    paddingVertical: 14,
-    alignItems: "center",
-  },
-  deleteButtonText: {
-    color: "#D54C4C",
-    fontWeight: "600",
   },
 });

@@ -2,18 +2,19 @@ import { useFocusEffect, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   Alert,
-  FlatList,
-  Image,
   Platform,
-  SafeAreaView,
+  ScrollView,
   StyleSheet,
 } from "react-native";
 import { ThemedText } from "../../components/common/ThemedText";
 import { ThemedView } from "../../components/common/ThemedView";
-import AddMedicationButton from "../../components/medications/AddMedicationButton";
-import MedicationCard from "../../components/medications/MedicationCard";
+import AddMedicationButton from "../../components/index/AddMedicationButton";
+import MedicationCard from "../../components/index/MedicationCard";
+import MedicationsHeader from "../../components/index/MedicationsHeader";
+import MissionStatement from "../../components/index/MissionStatement";
 import { StorageService } from "../../services/StorageService";
 import { Medication } from "../../types/Medication";
+import { groupMedicationsByPatient } from "../../utils/groupByPatient";
 
 export default function MedicationsIndex() {
   const [medications, setMedications] = useState<Medication[]>([]);
@@ -97,85 +98,91 @@ export default function MedicationsIndex() {
     }
   };
 
-  const renderMedicationItem = ({ item }: { item: Medication }) => (
-    <MedicationCard
-      medication={item}
-      onPress={() => handleEditMedication(item.id)}
-      onDelete={() => handleDeleteMedication(item.id)}
-    />
-  );
-
   const renderEmptyState = () => (
-    <ThemedView style={styles.emptyState} darkColor="#1f1f1f">
+    <ThemedView style={styles.emptyState}>
       <ThemedText type="subtitle" style={styles.emptyTitle}>
         No Medications Yet
       </ThemedText>
-      <ThemedText type="default" style={styles.emptySubtitle}>
-        Add your first medication to start building your Medication Safety Plan
+      <ThemedText
+        type="default"
+        lightColor="#666"
+        darkColor="#ccc"
+        style={styles.emptySubtitle}
+      >
+        Tap the + button below to add your first medication
       </ThemedText>
       <AddMedicationButton onPress={handleAddMedication} />
     </ThemedView>
   );
 
-  const renderHeader = () => (
-    <ThemedView style={styles.header} lightColor="#fff" darkColor="#2a2a2a">
-      <ThemedView
-        style={styles.headerContent}
-        lightColor="#fff"
-        darkColor="#2a2a2a"
-      >
-        {Platform.OS === "web" ? (
-          // Web layout: Text left, Logo right
-          <>
+  const renderGroupedMedications = () => {
+    const { grouped, sortedPatients } = groupMedicationsByPatient(medications);
+
+    return (
+      <>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {sortedPatients.map((patientName) => (
             <ThemedView
-              style={styles.headerTextContainer}
-              lightColor="#fff"
-              darkColor="#2a2a2a"
+              key={patientName}
+              style={styles.patientGroup}
+              lightColor="transparent"
+              darkColor="transparent"
             >
-              <ThemedText type="title">My Medications</ThemedText>
-              <ThemedText type="default" lightColor="#666" darkColor="#ccc">
-                {medications.length} medication
-                {medications.length !== 1 ? "s" : ""}
-              </ThemedText>
+              <ThemedView
+                style={styles.patientHeader}
+                lightColor="transparent"
+                darkColor="transparent"
+              >
+                <ThemedText
+                  type="subtitle"
+                  style={styles.patientHeaderText}
+                  lightColor="#f78b33"
+                  darkColor="#f78b33"
+                >
+                  {patientName}
+                </ThemedText>
+              </ThemedView>
+
+              <ThemedView
+                style={styles.medicationsContainer}
+                lightColor="transparent"
+                darkColor="transparent"
+              >
+                {grouped[patientName].map((medication: Medication) => (
+                  <MedicationCard
+                    key={medication.id}
+                    medication={medication}
+                    onPress={() => handleEditMedication(medication.id)}
+                    onDelete={() => handleDeleteMedication(medication.id)}
+                  />
+                ))}
+              </ThemedView>
             </ThemedView>
-            <Image
-              source={require("../../assets/images/logo.png")}
-              style={styles.headerLogo}
-              resizeMode="contain"
-            />
-          </>
-        ) : (
-          // Mobile layout: Logo above, Text below
-          <>
-            <Image
-              source={require("../../assets/images/logo.png")}
-              style={styles.headerLogo}
-              resizeMode="contain"
-            />
-            <ThemedView
-              style={styles.headerTextContainer}
-              lightColor="#fff"
-              darkColor="#2a2a2a"
-            >
-              <ThemedText type="title">My Medications</ThemedText>
-              <ThemedText type="default" lightColor="#666" darkColor="#ccc">
-                {medications.length} medication
-                {medications.length !== 1 ? "s" : ""}
-              </ThemedText>
-            </ThemedView>
-          </>
-        )}
-      </ThemedView>
-    </ThemedView>
-  );
+          ))}
+        </ScrollView>
+
+        <ThemedView
+          style={styles.fabContainer}
+          darkColor="transparent"
+          lightColor="transparent"
+        >
+          <AddMedicationButton onPress={handleAddMedication} />
+        </ThemedView>
+      </>
+    );
+  };
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <ThemedView style={styles.container}>
         <ThemedView style={styles.loadingContainer}>
           <ThemedText type="default">Loading medications...</ThemedText>
         </ThemedView>
-      </SafeAreaView>
+      </ThemedView>
     );
   }
 
@@ -185,32 +192,16 @@ export default function MedicationsIndex() {
       darkColor="#1f1f1f"
       lightColor="#f5f5f5"
     >
-      <SafeAreaView style={styles.safeArea}>
-        {renderHeader()}
+      <ThemedView
+        style={styles.safeArea}
+        darkColor="#1f1f1f"
+        lightColor="#f5f5f5"
+      >
+        <MedicationsHeader medicationCount={medications.length} />
+        <MissionStatement />
 
-        {medications.length === 0 ? (
-          renderEmptyState()
-        ) : (
-          <>
-            <FlatList
-              data={medications}
-              renderItem={renderMedicationItem}
-              keyExtractor={(item) => item.id}
-              contentContainerStyle={styles.listContainer}
-              showsVerticalScrollIndicator={false}
-              style={styles.list}
-            />
-
-            <ThemedView
-              style={styles.fabContainer}
-              darkColor="transparent"
-              lightColor="#f5f5f5"
-            >
-              <AddMedicationButton onPress={handleAddMedication} /> 
-            </ThemedView>
-          </>
-        )}
-      </SafeAreaView>
+        {medications.length === 0 ? renderEmptyState() : renderGroupedMedications()}
+      </ThemedView>
     </ThemedView>
   );
 }
@@ -222,40 +213,28 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
   },
-  header: {
-    marginTop: Platform.OS === "android" ? 48 : 0,
-    paddingHorizontal: 20,
-    paddingVertical: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: "#e0e0e0",
-  },
-  headerContent: {
-    flexDirection: Platform.OS === "web" ? "row" : "column",
-    alignItems: "center",
-  },
-  headerLogo: {
-    width: Platform.OS === "web" ? 250 : 200,
-    height: Platform.OS === "web" ? 85 : 68,
-    marginLeft: Platform.OS === "web" ? 15 : 0, // Changed from marginRight to marginLeft for web
-    marginBottom: Platform.OS === "web" ? 0 : 24, // Changed from marginTop to marginBottom for mobile
-    borderRadius: 8,
-  },
-  headerTextContainer: {
-    flex: Platform.OS === "web" ? 1 : 0,
-    alignItems: Platform.OS === "web" ? "flex-start" : "center",
-  },
-  headerTitle: {
-    textAlign: Platform.OS === "web" ? "left" : "center",
-  },
-  headerSubtitle: {
-    textAlign: Platform.OS === "web" ? "left" : "center",
-  },
-  list: {
+  scrollView: {
     flex: 1,
   },
-  listContainer: {
+  scrollContent: {
     padding: 16,
     paddingBottom: 100, // Space for FAB
+  },
+  patientGroup: {
+    marginBottom: 24,
+  },
+  patientHeader: {
+    marginBottom: 12,
+    paddingBottom: 8,
+    borderBottomWidth: 2,
+    borderBottomColor: "#f78b33",
+  },
+  patientHeaderText: {
+    fontSize: 18,
+    fontWeight: "600",
+  },
+  medicationsContainer: {
+    gap: 12,
   },
   emptyState: {
     flex: 1,
@@ -273,7 +252,7 @@ const styles = StyleSheet.create({
   },
   fabContainer: {
     position: "absolute",
-    bottom: 20,
+    bottom: 90,
     right: 20,
   },
   loadingContainer: {

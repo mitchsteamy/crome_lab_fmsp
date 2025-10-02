@@ -35,7 +35,8 @@
         }
       ],
       "expo-sqlite",
-      "expo-mail-composer"
+      "expo-mail-composer",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true

@@ -4,32 +4,13 @@ import { ThemedText } from "../common/ThemedText";
 import { ThemedView } from "../common/ThemedView";
 import SafetyPlanSection from "./SafetyPlanSection";
 import { Medication } from "../../types/Medication";
-
+import { groupMedicationsByPatient } from "../../utils/groupByPatient";
 interface CommunicationSectionProps {
   medications: Medication[];
 }
 
 export default function CommunicationSection({ medications }: CommunicationSectionProps) {
-  // Group medications by their primary contact
-  const contactGroups = medications.reduce((groups, med) => {
-    const contact = med.communication?.primaryContact;
-    if (contact?.name?.trim() || contact?.phone?.trim()) {
-      const key = `${contact.name?.trim() || 'Unknown'}-${contact.phone?.trim() || 'No phone'}`;
-      if (!groups[key]) {
-        groups[key] = {
-          contact: contact,
-          medications: []
-        };
-      }
-      groups[key].medications.push(med);
-    }
-    return groups;
-  }, {} as Record<string, { contact: any, medications: Medication[] }>);
-
-  // Get medications with questions/concerns
-  const medicationsWithQuestions = medications.filter(med => 
-    med.communication?.questionsAboutMedication?.trim()
-  );
+  const { grouped, sortedPatients } = groupMedicationsByPatient(medications);
 
   const communicationContent = (
     <ThemedView
@@ -37,7 +18,7 @@ export default function CommunicationSection({ medications }: CommunicationSecti
       lightColor="transparent"
       darkColor="transparent"
     >
-      {/* Emergency Contacts */}
+      {/* Emergency Contacts - Always at top */}
       <ThemedView
         style={styles.contactInfo}
         lightColor="transparent"
@@ -48,7 +29,7 @@ export default function CommunicationSection({ medications }: CommunicationSecti
           lightColor="#333"
           darkColor="#fff"
         >
-          Emergency Contacts
+          Emergency Numbers
         </ThemedText>
         <ThemedView
           style={styles.contactGrid}
@@ -81,160 +62,219 @@ export default function CommunicationSection({ medications }: CommunicationSecti
               lightColor="#333"
               darkColor="#e0e0e0"
             >
-              Emergency Services
+              Emergency
             </ThemedText>
             <ThemedText style={styles.contactValue}>911</ThemedText>
           </ThemedView>
         </ThemedView>
       </ThemedView>
 
-      {/* Healthcare Provider Contacts */}
-      {Object.keys(contactGroups).length > 0 && (
-        <ThemedView
-          style={styles.healthcareContacts}
-          lightColor="transparent"
-          darkColor="transparent"
-        >
-          <ThemedText
-            style={styles.contactTitle}
-            lightColor="#333"
-            darkColor="#fff"
+      {/* Patient-grouped sections */}
+      {sortedPatients.map((patientName, patientIndex) => {
+        const patientMeds = grouped[patientName];
+        
+        // Group medications by their primary contact for this patient
+        interface PrimaryContact {
+          name?: string;
+          phone?: string;
+        }
+
+        interface ContactGroup {
+          contact: PrimaryContact;
+          medications: Medication[];
+        }
+
+        const contactGroups = patientMeds.reduce((groups: Record<string, ContactGroup>, med: Medication) => {
+          const contact: PrimaryContact | undefined = med.communication?.primaryContact;
+          if (contact?.name?.trim() || contact?.phone?.trim()) {
+            const key = `${contact.name?.trim() || 'Unknown'}-${contact.phone?.trim() || 'No phone'}`;
+            if (!groups[key]) {
+              groups[key] = {
+                contact: contact,
+                medications: []
+              };
+            }
+            groups[key].medications.push(med);
+          }
+          return groups;
+        }, {} as Record<string, ContactGroup>);
+
+        const hasContacts = Object.keys(contactGroups).length > 0;
+        const hasQuestions: boolean = patientMeds.some((med: Medication) => med.communication?.questionsAboutMedication?.trim());
+        const hasSchoolPlans: boolean = patientMeds.some((med: Medication) => med.communication?.schoolPlan?.trim());
+
+        // Only show patient section if they have any communication data
+        if (!hasContacts && !hasQuestions && !hasSchoolPlans) {
+          return null;
+        }
+
+        return (
+          <ThemedView
+            key={patientName}
+            style={styles.patientSection}
+            lightColor="transparent"
+            darkColor="transparent"
           >
-            Healthcare Provider Contacts
-          </ThemedText>
-          {Object.values(contactGroups).map((group, index) => (
-            <ThemedView
-              key={index}
-              style={styles.providerGroup}
-              lightColor="transparent"
-              darkColor="transparent"
-            >
+            {/* Patient Name Header */}
+            <ThemedText style={styles.patientName} lightColor="#f78b33" darkColor="#f78b33">
+              {patientName}
+            </ThemedText>
+
+            {/* Healthcare Provider Contacts */}
+            {hasContacts && (
               <ThemedView
-                style={styles.providerHeader}
+                style={styles.healthcareContacts}
                 lightColor="transparent"
                 darkColor="transparent"
               >
                 <ThemedText
-                  style={styles.providerName}
+                  style={styles.sectionSubtitle}
                   lightColor="#333"
                   darkColor="#fff"
                 >
-                  {group.contact.name || 'Healthcare Provider'}
+                  Who to Contact
                 </ThemedText>
-                {group.contact.phone && (
-                  <ThemedText style={styles.providerPhone}>
-                    {group.contact.phone}
-                  </ThemedText>
-                )}
+                {Object.values(contactGroups).map((group, index) => {
+                  const typedGroup = group as ContactGroup;
+                  return (
+                    <ThemedView
+                      key={index}
+                      style={styles.providerGroup}
+                      lightColor="transparent"
+                      darkColor="transparent"
+                    >
+                      <ThemedView
+                        style={styles.providerHeader}
+                        lightColor="transparent"
+                        darkColor="transparent"
+                      >
+                        <ThemedText
+                          style={styles.providerName}
+                          lightColor="#333"
+                          darkColor="#fff"
+                        >
+                          {typedGroup.contact.name || 'Healthcare Provider'}
+                        </ThemedText>
+                        {typedGroup.contact.phone && (
+                          <ThemedText style={styles.providerPhone}>
+                            {typedGroup.contact.phone}
+                          </ThemedText>
+                        )}
+                      </ThemedView>
+                      <ThemedView
+                        style={styles.medicationList}
+                        lightColor="transparent"
+                        darkColor="transparent"
+                      >
+                        <ThemedText
+                          style={styles.medicationListLabel}
+                          lightColor="#666"
+                          darkColor="#ccc"
+                        >
+                          Medicines:
+                        </ThemedText>
+                        <ThemedText
+                          style={styles.medicationListText}
+                          lightColor="#333"
+                          darkColor="#e0e0e0"
+                        >
+                          {typedGroup.medications.map(med => med.brandName).join(', ')}
+                        </ThemedText>
+                      </ThemedView>
+                    </ThemedView>
+                  );
+                })}
               </ThemedView>
+            )}
+
+            {/* Questions and Concerns */}
+            {hasQuestions && (
               <ThemedView
-                style={styles.medicationList}
+                style={styles.questionsSection}
                 lightColor="transparent"
                 darkColor="transparent"
               >
                 <ThemedText
-                  style={styles.medicationListLabel}
-                  lightColor="#666"
-                  darkColor="#ccc"
-                >
-                  Medications:
-                </ThemedText>
-                <ThemedText
-                  style={styles.medicationListText}
-                  lightColor="#333"
-                  darkColor="#e0e0e0"
-                >
-                  {group.medications.map(med => med.brandName).join(', ')}
-                </ThemedText>
-              </ThemedView>
-            </ThemedView>
-          ))}
-        </ThemedView>
-      )}
-
-      {/* Questions and Concerns */}
-      {medicationsWithQuestions.length > 0 && (
-        <ThemedView
-          style={styles.questionsSection}
-          lightColor="transparent"
-          darkColor="transparent"
-        >
-          <ThemedText
-            style={styles.contactTitle}
-            lightColor="#333"
-            darkColor="#fff"
-          >
-            Questions & Concerns
-          </ThemedText>
-          {medicationsWithQuestions.map((med) => (
-            <ThemedView
-              key={med.id}
-              style={styles.questionEntry}
-              lightColor="transparent"
-              darkColor="transparent"
-            >
-              <ThemedText
-                style={styles.questionMedication}
-                lightColor="#333"
-                darkColor="#fff"
-              >
-                {med.brandName}:
-              </ThemedText>
-              <ThemedText
-                style={styles.questionContent}
-                lightColor="#666"
-                darkColor="#ccc"
-              >
-                {med.communication.questionsAboutMedication}
-              </ThemedText>
-            </ThemedView>
-          ))}
-        </ThemedView>
-      )}
-
-      {/* School Plans */}
-      {medications.filter((med) => med.communication?.schoolPlan?.trim()).length > 0 && (
-        <ThemedView
-          style={styles.schoolPlans}
-          lightColor="transparent"
-          darkColor="transparent"
-        >
-          <ThemedText
-            style={styles.contactTitle}
-            lightColor="#333"
-            darkColor="#fff"
-          >
-            School Medication Plans
-          </ThemedText>
-          {medications
-            .filter((med) => med.communication?.schoolPlan?.trim())
-            .map((med) => (
-              <ThemedView
-                key={med.id}
-                style={styles.schoolEntry}
-                lightColor="transparent"
-                darkColor="transparent"
-              >
-                <ThemedText
-                  style={styles.schoolMedication}
+                  style={styles.sectionSubtitle}
                   lightColor="#333"
                   darkColor="#fff"
                 >
-                  {med.brandName}:
+                  Your Questions
                 </ThemedText>
-                <ThemedText
-                  style={styles.schoolContent}
-                  lightColor="#666"
-                  darkColor="#ccc"
-                >
-                  {med.communication.schoolPlan}
-                </ThemedText>
+                {patientMeds
+                  .filter((med: Medication) => med.communication?.questionsAboutMedication?.trim())
+                  .map((med: Medication) => (
+                    <ThemedView
+                      key={med.id}
+                      style={styles.questionEntry}
+                      lightColor="transparent"
+                      darkColor="transparent"
+                    >
+                      <ThemedText
+                        style={styles.questionMedication}
+                        lightColor="#333"
+                        darkColor="#fff"
+                      >
+                        {med.brandName}:
+                      </ThemedText>
+                      <ThemedText
+                        style={styles.questionContent}
+                        lightColor="#666"
+                        darkColor="#ccc"
+                      >
+                        {med.communication.questionsAboutMedication}
+                      </ThemedText>
+                    </ThemedView>
+                  ))}
               </ThemedView>
-            ))}
-        </ThemedView>
-      )}
+            )}
 
-      {/* General Instructions */}
+            {/* School Plans */}
+            {hasSchoolPlans && (
+              <ThemedView
+                style={styles.schoolPlans}
+                lightColor="transparent"
+                darkColor="transparent"
+              >
+                <ThemedText
+                  style={styles.sectionSubtitle}
+                  lightColor="#333"
+                  darkColor="#fff"
+                >
+                  School Plans
+                </ThemedText>
+                {patientMeds
+                  .filter((med: Medication) => med.communication?.schoolPlan?.trim())
+                  .map((med: Medication) => (
+                    <ThemedView
+                      key={med.id}
+                      style={styles.schoolEntry}
+                      lightColor="transparent"
+                      darkColor="transparent"
+                    >
+                      <ThemedText
+                        style={styles.schoolMedication}
+                        lightColor="#333"
+                        darkColor="#fff"
+                      >
+                        {med.brandName}:
+                      </ThemedText>
+                      <ThemedText
+                        style={styles.schoolContent}
+                        lightColor="#666"
+                        darkColor="#ccc"
+                      >
+                        {med.communication.schoolPlan}
+                      </ThemedText>
+                    </ThemedView>
+                  ))}
+              </ThemedView>
+            )}
+          </ThemedView>
+        );
+      })}
+
+      {/* General Instructions - Always at bottom */}
       <ThemedView
         style={styles.generalInstructions}
         lightColor="transparent"
@@ -252,14 +292,14 @@ export default function CommunicationSection({ medications }: CommunicationSecti
           lightColor="#666"
           darkColor="#ccc"
         >
-          • Keep this safety plan accessible and share copies with family members
+          • Keep this plan where you can find it easily and share copies with family
         </ThemedText>
         <ThemedText
           style={styles.instructionsText}
           lightColor="#666"
           darkColor="#ccc"
         >
-          • Update contact information when healthcare providers change
+          • Update contact info when your healthcare providers change
         </ThemedText>
         <ThemedText
           style={styles.instructionsText}
@@ -274,7 +314,7 @@ export default function CommunicationSection({ medications }: CommunicationSecti
 
   return (
     <SafetyPlanSection
-      title="Communication & Safety Information"
+      title="Questions & Contact Info"
       content={communicationContent}
     />
   );
@@ -307,6 +347,19 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
     color: "#f78b33",
+  },
+  patientSection: {
+    gap: 16,
+  },
+  patientName: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: 4,
+  },
+  sectionSubtitle: {
+    fontSize: 14,
+    fontWeight: "600",
+    marginBottom: 12,
   },
   healthcareContacts: {},
   providerGroup: {

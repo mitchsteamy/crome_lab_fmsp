@@ -345,7 +345,7 @@ export class StorageService {
     
     return {
       totalMedications: medications.length,
-      activeMedications: medications.filter(med => med.isActive).length,
+      activeMedications: medications.filter(med => med.isActive && !med.isExpired).length,
       expiredMedications: medications.filter(med => med.isExpired).length,
       patients: [...new Set(medications.map(med => med.patientName))].sort()
     };

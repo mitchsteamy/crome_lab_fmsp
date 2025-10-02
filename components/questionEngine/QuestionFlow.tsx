@@ -79,7 +79,7 @@ export default function QuestionFlow() {
       lightColor="#f5f5f5"
       darkColor="#1f1f1f"
     >
-      <ThemedView style={styles.safeArea}>
+      <ThemedView style={styles.safeArea} lightColor="transparent" darkColor="transparent">
         <QuestionFlowHeader
           onCancel={handleCancel}
           progress={progress}
