@@ -13,7 +13,7 @@ export default function MedicationsHeader({ medicationCount }: MedicationsHeader
   
   // Choose logo based on screen size
   const logoSource = isSmallScreen 
-    ? require("../../assets/images/favicon.png")
+    ? require("../../assets/images/logo_small.png")
     : require("../../assets/images/logo.png");
   
   const logoSize = isSmallScreen ? 48 : (Platform.OS === "web" ? 250 : 200);
@@ -34,9 +34,9 @@ export default function MedicationsHeader({ medicationCount }: MedicationsHeader
               lightColor="#fff"
               darkColor="#2a2a2a"
             >
-              <ThemedText type="title">My Medications</ThemedText>
+              <ThemedText type="title">My Medicines</ThemedText>
               <ThemedText type="default" lightColor="#666" darkColor="#ccc">
-                {medicationCount} medication
+                {medicationCount} medicine
                 {medicationCount !== 1 ? "s" : ""}
               </ThemedText>
             </ThemedView>
@@ -59,9 +59,9 @@ export default function MedicationsHeader({ medicationCount }: MedicationsHeader
               lightColor="#fff"
               darkColor="#2a2a2a"
             >
-              <ThemedText type="title">My Medications</ThemedText>
+              <ThemedText type="title">My Medicines</ThemedText>
               <ThemedText type="default" lightColor="#666" darkColor="#ccc">
-                {medicationCount} medication
+                {medicationCount} medicine
                 {medicationCount !== 1 ? "s" : ""}
               </ThemedText>
             </ThemedView>
@@ -86,7 +86,7 @@ const styles = StyleSheet.create({
   },
   headerLogo: {
     marginLeft: Platform.OS === "web" ? 15 : 0,
-    marginBottom: Platform.OS === "web" ? 0 : 24,
+    marginBottom: Platform.OS === "web" ? 0 : 12,
     borderRadius: 8,
   },
   headerTextContainer: {

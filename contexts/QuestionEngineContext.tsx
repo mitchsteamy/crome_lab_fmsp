@@ -97,7 +97,7 @@ export const BASIC_INFO_QUESTIONS: QuestionSection = {
       question: "Who is this medicine for?",
       required: true,
       options: ["myself", "other"],
-      helpText: "Let us know if this is for you or someone else",
+      helpText: "Let us know if this is for you or someone else", 
     },
     {
       id: "patient_name",

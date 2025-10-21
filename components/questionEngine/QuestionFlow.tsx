@@ -56,19 +56,19 @@ export default function QuestionFlow() {
       await StorageService.storeMedication(medication);
 
       if (Platform.OS === "web") {
-        alert("Medication added successfully!");
+        alert("Medicine added successfully!");
       } else {
-        Alert.alert("Success", "Medication added successfully!");
+        Alert.alert("Success", "Medicine added successfully!");
       }
 
       router.back();
     } catch (error) {
-      console.error("Error saving medication:", error);
+      console.error("Error saving medicine:", error);
 
       if (Platform.OS === "web") {
-        alert("Failed to save medication. Please try again.");
+        alert("Failed to save medicine. Please try again.");
       } else {
-        Alert.alert("Error", "Failed to save medication. Please try again.");
+        Alert.alert("Error", "Failed to save medicine. Please try again.");
       }
     }
   };

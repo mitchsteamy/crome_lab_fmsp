@@ -57,7 +57,7 @@ export default function QuestionFlowNavigation({
         activeOpacity={0.7}
       >
         <ThemedText style={styles.continueButtonText}>
-          {isCompleted ? "Add Medication" : "Continue"}
+          {isCompleted ? "Add Medicine" : "Continue"}
         </ThemedText>
       </TouchableOpacity>
     </ThemedView>

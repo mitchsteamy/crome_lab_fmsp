@@ -29,7 +29,7 @@ export default function RootLayout() {
     return (
       <View style={styles.loadingContainer}>
         <Text style={styles.loadingText}>
-          {error ? `Error: ${error}` : 'Loading...'}
+          {error ? `Error: ${error}` : 'Loading...'} 
         </Text>
       </View>
     );

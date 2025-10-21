@@ -1,32 +1,30 @@
 import { useFocusEffect, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
-import {
-  Alert,
-  Platform,
-  ScrollView,
-  StyleSheet,
-} from "react-native";
+import { Alert, Platform, ScrollView, StyleSheet, useColorScheme } from "react-native";
 import { ThemedText } from "../../components/common/ThemedText";
 import { ThemedView } from "../../components/common/ThemedView";
 import AddMedicationButton from "../../components/index/AddMedicationButton";
+import ExportMedicationsButton from "../../components/index/ExportMedicationsButtons";
 import MedicationCard from "../../components/index/MedicationCard";
 import MedicationsHeader from "../../components/index/MedicationsHeader";
 import MissionStatement from "../../components/index/MissionStatement";
+import AddMethodSelector from "../../components/index/AddMedicationSelector";
 import { StorageService } from "../../services/StorageService";
+import { MedicationImportExport } from "../../services/MedicationImportExport";
 import { Medication } from "../../types/Medication";
 import { groupMedicationsByPatient } from "../../utils/groupByPatient";
 
 export default function MedicationsIndex() {
   const [medications, setMedications] = useState<Medication[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showAddMethodSelector, setShowAddMethodSelector] = useState(false);
   const router = useRouter();
+  const colorScheme = useColorScheme();
 
-  // Load medications when component mounts
   useEffect(() => {
     loadMedications();
   }, []);
 
-  // Reload medications when screen comes into focus (after adding/editing)
   useFocusEffect(
     useCallback(() => {
       loadMedications();
@@ -39,11 +37,11 @@ export default function MedicationsIndex() {
       const loadedMedications = await StorageService.retrieveMedications();
       setMedications(loadedMedications);
     } catch (error) {
-      console.error("Error loading medications:", error);
+      console.error("Error loading medicines:", error);
       if (Platform.OS === "web") {
-        alert("Failed to load medications");
+        alert("Failed to load medicines");
       } else {
-        Alert.alert("Error", "Failed to load medications");
+        Alert.alert("Error", "Failed to load medicines");
       }
     } finally {
       setLoading(false);
@@ -51,7 +49,57 @@ export default function MedicationsIndex() {
   };
 
   const handleAddMedication = () => {
+    setShowAddMethodSelector(true);
+  };
+
+  const handleManualAdd = () => {
+    setShowAddMethodSelector(false);
     router.push("/medication/add");
+  };
+
+  const handleImport = async () => {
+    setShowAddMethodSelector(false);
+
+    try {
+      const result = await MedicationImportExport.importMedications();
+
+      if (result.success && result.medications) {
+        const { added, skipped } =
+          await MedicationImportExport.mergeImportedMedications(
+            result.medications
+          );
+
+        const message = `Successfully imported ${added} medicine${
+          added !== 1 ? "s" : ""
+        }${
+          skipped > 0
+            ? `. ${skipped} medicine${skipped !== 1 ? "s" : ""} skipped.`
+            : "."
+        }`;
+
+        if (Platform.OS === "web") {
+          alert(message);
+        } else {
+          Alert.alert("Import Successful", message);
+        }
+
+        // Reload medications after import
+        await loadMedications();
+      } else if (result.error && result.error !== "Import cancelled") {
+        if (Platform.OS === "web") {
+          alert(result.error);
+        } else {
+          Alert.alert("Import Failed", result.error);
+        }
+      }
+    } catch (error) {
+      console.error("Import error:", error);
+      if (Platform.OS === "web") {
+        alert("Failed to import medicines");
+      } else {
+        Alert.alert("Error", "Failed to import medicines");
+      }
+    }
   };
 
   const handleEditMedication = (medicationId: string) => {
@@ -61,7 +109,7 @@ export default function MedicationsIndex() {
   const handleDeleteMedication = async (medicationId: string) => {
     if (Platform.OS === "web") {
       const confirmed = window.confirm(
-        "Are you sure you want to delete this medication? This action cannot be undone."
+        "Are you sure you want to delete this medicine? This action cannot be undone."
       );
       if (confirmed) {
         try {
@@ -70,13 +118,13 @@ export default function MedicationsIndex() {
             prev.filter((med) => med.id !== medicationId)
           );
         } catch (error) {
-          alert("Failed to delete medication");
+          alert("Failed to delete medicine");
         }
       }
     } else {
       Alert.alert(
-        "Delete Medication",
-        "Are you sure you want to delete this medication? This action cannot be undone.",
+        "Delete Medicine",
+        "Are you sure you want to delete this medicine? This action cannot be undone.",
         [
           { text: "Cancel", style: "cancel" },
           {
@@ -89,7 +137,7 @@ export default function MedicationsIndex() {
                   prev.filter((med) => med.id !== medicationId)
                 );
               } catch (error) {
-                Alert.alert("Error", "Failed to delete medication");
+                Alert.alert("Error", "Failed to delete medicine");
               }
             },
           },
@@ -99,9 +147,13 @@ export default function MedicationsIndex() {
   };
 
   const renderEmptyState = () => (
-    <ThemedView style={styles.emptyState}>
+    <ThemedView
+      style={styles.emptyState}
+      lightColor="transparent"
+      darkColor="transparent"
+    >
       <ThemedText type="subtitle" style={styles.emptyTitle}>
-        No Medications Yet
+        No Medicines Yet
       </ThemedText>
       <ThemedText
         type="default"
@@ -109,7 +161,7 @@ export default function MedicationsIndex() {
         darkColor="#ccc"
         style={styles.emptySubtitle}
       >
-        Tap the + button below to add your first medication
+        Tap the + button below to add your first medicine
       </ThemedText>
       <AddMedicationButton onPress={handleAddMedication} />
     </ThemedView>
@@ -133,15 +185,19 @@ export default function MedicationsIndex() {
               darkColor="transparent"
             >
               <ThemedView
-                style={styles.patientHeader}
+                style={[
+                  styles.patientHeader,
+                  {
+                    borderBottomColor:
+                      colorScheme === "dark" ? "#fff" : "#000", // Both orange for now
+                  },
+                ]}
                 lightColor="transparent"
                 darkColor="transparent"
               >
                 <ThemedText
                   type="subtitle"
                   style={styles.patientHeaderText}
-                  lightColor="#f78b33"
-                  darkColor="#f78b33"
                 >
                   {patientName}
                 </ThemedText>
@@ -163,15 +219,8 @@ export default function MedicationsIndex() {
               </ThemedView>
             </ThemedView>
           ))}
+          <ExportMedicationsButton medications={medications} />
         </ScrollView>
-
-        <ThemedView
-          style={styles.fabContainer}
-          darkColor="transparent"
-          lightColor="transparent"
-        >
-          <AddMedicationButton onPress={handleAddMedication} />
-        </ThemedView>
       </>
     );
   };
@@ -200,8 +249,17 @@ export default function MedicationsIndex() {
         <MedicationsHeader medicationCount={medications.length} />
         <MissionStatement />
 
-        {medications.length === 0 ? renderEmptyState() : renderGroupedMedications()}
+        {medications.length === 0
+          ? renderEmptyState()
+          : renderGroupedMedications()}
       </ThemedView>
+
+      <AddMethodSelector
+        visible={showAddMethodSelector}
+        onClose={() => setShowAddMethodSelector(false)}
+        onManual={handleManualAdd}
+        onImport={handleImport}
+      />
     </ThemedView>
   );
 }
@@ -218,7 +276,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 16,
-    paddingBottom: 100, // Space for FAB
+    paddingBottom: 20,
   },
   patientGroup: {
     marginBottom: 24,
@@ -227,7 +285,6 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     paddingBottom: 8,
     borderBottomWidth: 2,
-    borderBottomColor: "#f78b33",
   },
   patientHeaderText: {
     fontSize: 18,
@@ -249,11 +306,6 @@ const styles = StyleSheet.create({
   emptySubtitle: {
     textAlign: "center",
     marginBottom: 32,
-  },
-  fabContainer: {
-    position: "absolute",
-    bottom: 90,
-    right: 20,
   },
   loadingContainer: {
     flex: 1,

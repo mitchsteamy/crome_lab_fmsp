@@ -340,7 +340,7 @@ export default function QuestionInput({
       return (
         <ThemedView style={styles.timeListEmpty}>
           <ThemedText style={styles.timeListEmptyText}>
-            Complete the previous questions to see your medication schedule
+            Complete the previous questions to see your medicine schedule
           </ThemedText>
         </ThemedView>
       );

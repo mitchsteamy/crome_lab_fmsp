@@ -101,7 +101,7 @@ export default function MissionStatement() {
               lightColor="#666"
               darkColor="#ccc"
             >
-              This plan puts you in control of your medication management.
+              This plan puts you in control of your medicine management.
             </ThemedText>
           </ThemedView>
         )}

@@ -3,7 +3,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { Alert, Platform, ScrollView, StyleSheet } from "react-native";
 import { ThemedView } from "../../components/common/ThemedView";
 import { ThemedText } from "../../components/common/ThemedText";
-import ExportControls from "../../components/safetyPlan/ExportControls";
+import ExportSafetyPlanButton from "../../components/safetyPlan/ExportSafetyPlanButton";
 import SafetyPlanHeader from "../../components/safetyPlan/SafetyPlanHeader";
 import MedicationTable from "../../components/safetyPlan/MedicationTable";
 import BenefitsAndEffects from "../../components/safetyPlan/BenefitsAndEffects";
@@ -96,13 +96,17 @@ export default function SafetyPlanTab() {
       >
         <SafetyPlanHeader stats={stats} />
         <EmptyState />
-        <ExportControls medications={medications} stats={stats} />
+        <ExportSafetyPlanButton medications={medications} stats={stats} />
       </ThemedView>
     );
   }
 
   return (
-    <ThemedView style={styles.container} lightColor="#f5f5f5">
+    <ThemedView
+      style={styles.container}
+      lightColor="#f5f5f5"
+      darkColor="#1f1f1f"
+    >
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
@@ -129,9 +133,8 @@ export default function SafetyPlanTab() {
             {DateUtils.formatDate(new Date(), "datetime")}
           </ThemedText>
         </ThemedView>
+        <ExportSafetyPlanButton medications={medications} stats={stats} />
       </ScrollView>
-
-      <ExportControls medications={medications} stats={stats} />
     </ThemedView>
   );
 }

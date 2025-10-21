@@ -15,7 +15,7 @@ interface AddMedicationButtonProps {
 export default function AddMedicationButton({  
   onPress, 
   variant = 'fab',
-  title = 'Add Medication'
+  title = 'Add Medicine'
 }: AddMedicationButtonProps) {
   
   if (variant === 'fab') {

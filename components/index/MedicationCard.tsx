@@ -64,7 +64,7 @@ export default function MedicationCard({
     }
 
     if (
-      medication.schedule?.frequency === "daily" &&
+      medication.schedule?.frequency === "every day" &&
       medication.schedule?.doseTimes
     ) {
       const timesCount = medication.schedule.doseTimes.length;
@@ -72,7 +72,7 @@ export default function MedicationCard({
     }
 
     return FormatUtils.formatScheduleFrequency(
-      medication.schedule?.frequency || "daily"
+      medication.schedule?.frequency || "every day"
     );
   };
 

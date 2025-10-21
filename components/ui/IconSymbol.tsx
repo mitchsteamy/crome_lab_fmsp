@@ -6,7 +6,7 @@ import { ComponentProps } from 'react';
 import { OpaqueColorValue, type StyleProp, type TextStyle } from 'react-native';
 
 type IconMapping = Record<string, ComponentProps<typeof MaterialIcons>['name']>;
-type IconSymbolName = 'medication.fill' | 'plan.fill' | 'chevron.left.forwardslash.chevron.right' | 'chevron.right';
+type IconSymbolName = 'medication.fill' | 'plan.fill' | 'chevron.left.forwardslash.chevron.right' | 'chevron.right' | 'add.circle';
 
 /**
  * Add your SF Symbols to Material Icons mappings here.
@@ -18,6 +18,7 @@ const MAPPING: IconMapping = {
   'plan.fill': 'text-snippet',
   'chevron.left.forwardslash.chevron.right': 'code',
   'chevron.right': 'chevron-right',
+  'add.circle': 'add-circle',
 };
 
 /**
