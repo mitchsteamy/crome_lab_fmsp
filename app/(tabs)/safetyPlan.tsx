@@ -142,7 +142,8 @@ export default function SafetyPlanTab() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    marginTop: Platform.OS === "android" ? 48 : 0,
+    marginTop: Platform.OS === "web" ? 0 : 48,
+    paddingBottom: Platform.OS === "ios" ? 70 : 0,
   },
   scrollView: {
     flex: 1,

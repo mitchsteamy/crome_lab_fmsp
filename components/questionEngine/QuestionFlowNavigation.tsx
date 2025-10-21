@@ -31,7 +31,6 @@ export default function QuestionFlowNavigation({
       <TouchableOpacity
         style={[styles.navButton, styles.backButton]}
         onPress={onPrevious}
-        disabled={isBackDisabled}
         activeOpacity={0.7}
       >
         <ThemedText

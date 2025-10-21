@@ -18,10 +18,10 @@ export interface QuestionStep {
   required: boolean;
   options?: string[];
   placeholder?: string;
-  validation?: (value: any) => string | null;
+  validation?: (value: any, allAnswers?: Record<string, any>) => string | null; // ✅ Add allAnswers parameter
   helpText?: string;
-  dependsOn?: string; // Optional field that depends on another answer
-  showIf?: (answers: Record<string, any>) => boolean; // Conditional logic
+  dependsOn?: string;
+  showIf?: (answers: Record<string, any>) => boolean;
 }
 
 export interface QuestionSection {
@@ -97,7 +97,7 @@ export const BASIC_INFO_QUESTIONS: QuestionSection = {
       question: "Who is this medicine for?",
       required: true,
       options: ["myself", "other"],
-      helpText: "Let us know if this is for you or someone else", 
+      helpText: "Let us know if this is for you or someone else",
     },
     {
       id: "patient_name",
@@ -171,9 +171,20 @@ export const DOSAGE_ADMIN_QUESTIONS: QuestionSection = {
         "drops",
         "puff",
         "patch",
-        "injection",
+        "units",
+        "other",
       ],
       helpText: "Pick what matches your medicine",
+    },
+    {
+      id: "dosage_unit_other",
+      title: "Dosage Unit",
+      type: "text",
+      question: "How is it measured?",
+      required: true,
+      placeholder: "Other unit",
+      helpText: "Pick what matches your medicine",
+      showIf: (answers) => answers.dosage_unit === "other",
     },
     {
       id: "dosage_amount",
@@ -190,7 +201,7 @@ export const DOSAGE_ADMIN_QUESTIONS: QuestionSection = {
       type: "text",
       question: "What's the strength of each dose?",
       required: false,
-      placeholder: "Like 5mg, 250mg, 10mg/mL, or 500mg",
+      placeholder: "Like 5mg, 2g, or 500mg",
       helpText:
         "This is usually on your bottle. Like '5mg per tablet' or '250mg per teaspoon.' Leave blank if you're not sure.",
     },
@@ -212,8 +223,19 @@ export const DOSAGE_ADMIN_QUESTIONS: QuestionSection = {
         "nasal",
         "vaginal",
         "rectal",
+        "other",
       ],
       helpText: "Pick how you use this medicine",
+    },
+    {
+      id: "administration_method_other",
+      title: "How You Take It",
+      type: "text",
+      question: "How do you take it?",
+      required: true,
+      placeholder: "Other method",
+      helpText: "Pick what matches your medicine",
+      showIf: (answers) => answers.administration_method === "other",
     },
     {
       id: "food_requirement",
@@ -303,6 +325,26 @@ export const SCHEDULE_QUESTIONS: QuestionSection = {
       showIf: (answers) => answers.schedule_frequency === "every day",
     },
     {
+      id: "daily_frequency_count", // ✅ NEW QUESTION
+      title: "How Many Times",
+      type: "number",
+      question: "How many times per day?",
+      required: true,
+      placeholder: "Enter number (like 5, 6, or 8)",
+      helpText: "Tell us exactly how many times you take this each day",
+      showIf: (answers) => answers.daily_frequency === "more-than-four",
+      validation: (value: any) => {
+        const num = parseInt(value);
+        if (isNaN(num) || num < 5) {
+          return "Please enter a number of 5 or more";
+        }
+        if (num > 24) {
+          return "Please enter a number less than 24";
+        }
+        return null;
+      },
+    },
+    {
       id: "interval_hours",
       title: "Hours Between",
       type: "number",
@@ -363,9 +405,9 @@ export const SCHEDULE_QUESTIONS: QuestionSection = {
       id: "start_date",
       title: "Start Date",
       type: "date",
-      question: "When did you start taking this medicine?",
+      question: "When did/will you start taking this medicine?",
       required: true,
-      helpText: "Pick the date you started or will start",
+      helpText: "If you can't remember, just pick today's date",
     },
     {
       id: "end_date",
@@ -374,6 +416,20 @@ export const SCHEDULE_QUESTIONS: QuestionSection = {
       question: "When will you stop taking this medicine?",
       required: false,
       helpText: "Leave blank if you're not sure or if it's ongoing",
+      validation: (value: any, allAnswers?: Record<string, any>) => {
+        if (!value) return null; // Optional field, so null/empty is okay
+
+        const endDate = new Date(value);
+        const startDate = allAnswers?.start_date
+          ? new Date(allAnswers.start_date)
+          : null;
+
+        if (startDate && endDate < startDate) {
+          return "End date cannot be before start date";
+        }
+
+        return null;
+      },
     },
   ],
 };
@@ -458,6 +514,19 @@ export const STORAGE_DISPOSAL_QUESTIONS: QuestionSection = {
       required: false,
       helpText:
         "Check the date on your package. Leave blank if you're not sure.",
+      validation: (value: any) => {
+        if (!value) return null; // Optional field, so null/empty is okay
+
+        const expirationDate = new Date(value);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // Reset time to start of day for fair comparison
+
+        if (expirationDate < today) {
+          return "Expiration date cannot be in the past";
+        }
+
+        return null;
+      },
     },
     {
       id: "disposal_instructions",
@@ -663,11 +732,28 @@ function questionEngineReducer(
             state.currentStepIndex
           ];
 
-      const isCurrentStepValid =
-        state.showInstructions ||
-        !currentValidationStep?.required ||
-        (newAnswers[currentValidationStep.id] !== undefined &&
-          newAnswers[currentValidationStep.id] !== "");
+      let isCurrentStepValid = true;
+
+      if (currentValidationStep && !state.showInstructions) {
+        // Run custom validation if it exists
+        if (currentValidationStep.validation) {
+          const validationError = currentValidationStep.validation(
+            newAnswers[currentValidationStep.id],
+            newAnswers // ✅ Pass all answers to validation
+          );
+          if (validationError) {
+            isCurrentStepValid = false;
+          }
+        }
+
+        // Check required field
+        if (currentValidationStep.required) {
+          const answer = newAnswers[currentValidationStep.id];
+          if (answer === undefined || answer === "" || answer === null) {
+            isCurrentStepValid = false;
+          }
+        }
+      }
 
       return {
         ...state,
@@ -769,10 +855,21 @@ export function QuestionEngineProvider({
       );
     }
 
-    // Standard validation for other required fields
+    // Check if field has a value (for required fields)
     if (currentStep.required) {
       const answer = state.answers[currentStep.id];
-      return answer !== undefined && answer !== "" && answer !== null;
+      if (answer === undefined || answer === "" || answer === null) {
+        return false;
+      }
+    }
+
+    // ✅ NEW: Check for validation errors
+    if (currentStep.validation) {
+      const answer = state.answers[currentStep.id];
+      const validationError = currentStep.validation(answer, state.answers);
+      if (validationError) {
+        return false; // Disable if there's a validation error
+      }
     }
 
     return true;
@@ -780,6 +877,21 @@ export function QuestionEngineProvider({
 
   const buildMedication = (): Partial<Medication> => {
     const answers = state.answers;
+
+    // Helper: Get the actual value, checking for "other" option
+    const getDosageUnit = () => {
+      if (answers.dosage_unit === "other") {
+        return answers.dosage_unit_other || "other";
+      }
+      return answers.dosage_unit || "tablet";
+    };
+
+    const getAdministrationMethod = () => {
+      if (answers.administration_method === "other") {
+        return answers.administration_method_other || "other";
+      }
+      return answers.administration_method || "by mouth";
+    };
 
     // Helper function to get dose times - use stored times if available, otherwise compute them
     const getDoseTimes = () => {
@@ -811,24 +923,34 @@ export function QuestionEngineProvider({
       const firstMinute = firstDoseTime.getMinutes();
 
       if (dailyFreq === "every-x-hours") {
-        // 24-hour schedule with specified intervals
-        let currentHour = firstHour;
-        let currentMinute = firstMinute;
+        // Calculate all doses in a 24-hour period
+        const intervalMinutes = intervalHours * 60;
+        const totalMinutesInDay = 24 * 60;
 
-        for (let i = 0; i < 24 / intervalHours; i++) {
-          times.push({ hour: currentHour, minute: currentMinute });
-          currentHour = (currentHour + intervalHours) % 24;
+        // Start from the first dose time (in minutes since midnight)
+        let currentMinutes = firstHour * 60 + firstMinute;
+
+        // Calculate how many doses fit in 24 hours
+        const numDoses = Math.floor(totalMinutesInDay / intervalMinutes);
+
+        for (let i = 0; i < numDoses; i++) {
+          const hour = Math.floor(currentMinutes / 60) % 24;
+          const minute = currentMinutes % 60;
+          times.push({ hour, minute });
+          currentMinutes += intervalMinutes;
         }
       } else {
-        // Fixed times with last dose at 11pm
+        // Fixed times per day (once, twice, three-times, etc.)
         times.push({ hour: firstHour, minute: firstMinute });
 
         let numDoses = 1;
         if (dailyFreq === "twice") numDoses = 2;
         else if (dailyFreq === "three-times") numDoses = 3;
         else if (dailyFreq === "four-times") numDoses = 4;
-        else if (dailyFreq === "more-than-four") numDoses = 5;
-
+        else if (dailyFreq === "more-than-four") {
+          // ✅ Use the collected number instead of hardcoding 5
+          numDoses = parseInt(answers.daily_frequency_count) || 5;
+        }
         if (numDoses > 1) {
           // Calculate intervals to end at 11pm (23:00)
           const endHour = 23;
@@ -862,9 +984,9 @@ export function QuestionEngineProvider({
 
       // Dosage & Administration
       dosageAmount: answers.dosage_amount || "1",
-      dosageUnit: answers.dosage_unit || "tablet",
+      dosageUnit: getDosageUnit(),
       dosageStrength: answers.dosage_strength || "",
-      administrationMethod: answers.administration_method || "by mouth",
+      administrationMethod: getAdministrationMethod(),
       foodRequirement: answers.food_requirement || "no food requirement",
 
       // Schedule

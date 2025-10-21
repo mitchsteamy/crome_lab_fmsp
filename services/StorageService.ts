@@ -268,7 +268,7 @@ export class StorageService {
       exportFormat: 'pdf',
     };
 
-    const settings = await this.retrieveData(this.STORAGE_KEYS.APP_SETTINGS);
+    const settings = await this.retrieveData(this.STORAGE_KEYS.APP_SETTINGS); 
     return { ...defaultSettings, ...settings };
   }
 

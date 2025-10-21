@@ -1,5 +1,5 @@
 import React from "react";
-import { StyleSheet, TouchableOpacity } from "react-native";
+import { Platform, StyleSheet, TouchableOpacity } from "react-native";
 import { ThemedText } from "../common/ThemedText";
 import { ThemedView } from "../common/ThemedView";
 
@@ -65,6 +65,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderBottomWidth: 1,
     borderBottomColor: "#e0e0e0",
+    paddingTop: Platform.OS === "ios" ? 60 : 16,
   },
   headerButton: {
     paddingVertical: 8,

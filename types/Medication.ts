@@ -15,7 +15,7 @@ export type AdministrationMethod =
 export type PrescriptionType = "prescription" | "over-the-counter";
 
 // FIXED: Updated to match question flow exactly
-export type FoodRequirement = "with food" | "before food" | "after food" | "no food requirement";
+export type FoodRequirement = "with food" | "before food" | "after food" | "no food requirement"; 
 
 // FIXED: Changed "daily" to "every day" and added "as-needed"
 export type ScheduleFrequency =

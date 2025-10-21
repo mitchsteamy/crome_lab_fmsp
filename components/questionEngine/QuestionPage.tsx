@@ -10,14 +10,18 @@ interface QuestionPageProps {
   onAnswerChange: (questionId: string, value: any) => void;
 }
 
-export default function QuestionPage({ 
-  answers, 
-  onAnswerChange 
+export default function QuestionPage({
+  answers,
+  onAnswerChange,
 }: QuestionPageProps) {
   const { getCurrentStep, getCurrentSection } = useQuestionEngine();
-  
+
   const currentStep = getCurrentStep();
   const currentSection = getCurrentSection();
+
+  const validationError = currentStep.validation
+    ? currentStep.validation(answers[currentStep.id], answers)
+    : null;
 
   if (!currentStep || !currentSection) {
     return (
@@ -32,10 +36,7 @@ export default function QuestionPage({
   }
 
   return (
-    <ScrollView
-      style={styles.scrollView}
-      showsVerticalScrollIndicator={false}
-    >
+    <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
       <ThemedView
         style={styles.questionContainer}
         lightColor="#fff"
@@ -75,6 +76,17 @@ export default function QuestionPage({
           onValueChange={(value) => onAnswerChange(currentStep.id, value)}
           answers={answers}
         />
+
+        {/* Validation Error */}
+        {validationError && (
+          <ThemedText
+            style={styles.errorText}
+            lightColor="#d32f2f"
+            darkColor="#f44336"
+          >
+            {validationError}
+          </ThemedText>
+        )}
       </ThemedView>
     </ScrollView>
   );
@@ -99,7 +111,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 14,
-    fontWeight: "600", 
+    fontWeight: "600",
     marginBottom: 16,
     textTransform: "uppercase",
     letterSpacing: 0.5,
@@ -118,5 +130,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     padding: 20,
+  },
+  errorText: {
+    fontSize: 14,
   },
 });

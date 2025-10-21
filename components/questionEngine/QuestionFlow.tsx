@@ -32,11 +32,12 @@ export default function QuestionFlow() {
   };
 
   const handleCancel = () => {
+    dispatch({ type: "RESET" }); // Clear answers
     if (Platform.OS === "web") {
       router.push("/");
     } else {
       router.back();
-    }
+    } 
   };
 
   const handleAnswerChange = (questionId: string, value: any) => {
@@ -61,7 +62,7 @@ export default function QuestionFlow() {
         Alert.alert("Success", "Medicine added successfully!");
       }
 
-      router.back();
+      handleCancel();
     } catch (error) {
       console.error("Error saving medicine:", error);
 
@@ -79,7 +80,11 @@ export default function QuestionFlow() {
       lightColor="#f5f5f5"
       darkColor="#1f1f1f"
     >
-      <ThemedView style={styles.safeArea} lightColor="transparent" darkColor="transparent">
+      <ThemedView
+        style={styles.safeArea}
+        lightColor="transparent"
+        darkColor="transparent"
+      >
         <QuestionFlowHeader
           onCancel={handleCancel}
           progress={progress}
@@ -126,7 +131,6 @@ export default function QuestionFlow() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: "center",
   },
   safeArea: {
     flex: 1,
@@ -135,7 +139,7 @@ const styles = StyleSheet.create({
   },
   keyboardAvoidingContainer: {
     flex: 1,
-    marginBottom: Platform.OS === "android" ? 48 : 0,
+    marginBottom: Platform.OS === "ios" ? 70 : 0,
   },
   content: {
     flex: 1,

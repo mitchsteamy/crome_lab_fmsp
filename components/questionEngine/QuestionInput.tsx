@@ -347,7 +347,7 @@ export default function QuestionInput({
     }
 
     return (
-      <ThemedView style={styles.timeListContainer} darkColor="#222" lightColor="#fff">
+      <ThemedView style={styles.timeListContainer} darkColor="#222" lightColor="#fff"> 
         <ThemedText style={styles.timeListTitle}>
           Daily Medication Times:
         </ThemedText>

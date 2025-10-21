@@ -1,6 +1,12 @@
 import { useFocusEffect, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
-import { Alert, Platform, ScrollView, StyleSheet, useColorScheme } from "react-native";
+import {
+  Alert,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  useColorScheme,
+} from "react-native";
 import { ThemedText } from "../../components/common/ThemedText";
 import { ThemedView } from "../../components/common/ThemedView";
 import AddMedicationButton from "../../components/index/AddMedicationButton";
@@ -185,19 +191,15 @@ export default function MedicationsIndex() {
               darkColor="transparent"
             >
               <ThemedView
-                style={[
-                  styles.patientHeader,
-                  {
-                    borderBottomColor:
-                      colorScheme === "dark" ? "#fff" : "#000", // Both orange for now
-                  },
-                ]}
+                style={styles.patientHeader}
                 lightColor="transparent"
                 darkColor="transparent"
               >
                 <ThemedText
                   type="subtitle"
                   style={styles.patientHeaderText}
+                  lightColor="#f78b33"
+                  darkColor="#f78b33"
                 >
                   {patientName}
                 </ThemedText>
@@ -267,6 +269,8 @@ export default function MedicationsIndex() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    marginTop: Platform.OS === "web" ? 0 : 48,
+    paddingBottom: Platform.OS === "ios" ? 70 : 0,
   },
   safeArea: {
     flex: 1,
@@ -285,6 +289,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     paddingBottom: 8,
     borderBottomWidth: 2,
+    borderBottomColor: "#f78b33",
   },
   patientHeaderText: {
     fontSize: 18,
