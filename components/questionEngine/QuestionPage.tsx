@@ -19,6 +19,18 @@ export default function QuestionPage({
   const currentStep = getCurrentStep();
   const currentSection = getCurrentSection();
 
+  if (!currentStep || !currentSection) {
+    return (
+      <ThemedView
+        style={styles.errorContainer}
+        lightColor="transparent"
+        darkColor="transparent"
+      >
+        <ThemedText>Error: Unable to load question</ThemedText>
+      </ThemedView>
+    );
+  }
+
   const validationError = currentStep.validation
     ? currentStep.validation(answers[currentStep.id], answers)
     : null;

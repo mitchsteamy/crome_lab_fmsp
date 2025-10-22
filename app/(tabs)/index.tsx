@@ -269,7 +269,7 @@ export default function MedicationsIndex() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    marginTop: Platform.OS === "web" ? 0 : 48,
+    marginTop: Platform.OS === "ios" ? 48 : 0,
     paddingBottom: Platform.OS === "ios" ? 70 : 0,
   },
   safeArea: {

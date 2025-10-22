@@ -1,6 +1,5 @@
 import React from "react";
 import { StyleSheet, Platform, Alert } from "react-native";
-import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { useRouter } from "expo-router";
 import { ThemedView } from "../common/ThemedView";
 import QuestionFlowHeader from "./QuestionFlowHeader";
@@ -37,7 +36,7 @@ export default function QuestionFlow() {
       router.push("/");
     } else {
       router.back();
-    } 
+    }
   };
 
   const handleAnswerChange = (questionId: string, value: any) => {
@@ -93,12 +92,6 @@ export default function QuestionFlow() {
 
         {!state.showInstructions && <ProgressBar progress={progress} />}
 
-        <KeyboardAwareScrollView
-          style={styles.keyboardAvoidingContainer}
-          contentContainerStyle={{ flex: 1 }}
-          enableOnAndroid={true}
-          extraScrollHeight={20}
-        >
           <ThemedView
             style={styles.content}
             lightColor="transparent"
@@ -122,7 +115,6 @@ export default function QuestionFlow() {
             showInstructions={state.showInstructions}
             progress={progress}
           />
-        </KeyboardAwareScrollView>
       </ThemedView>
     </ThemedView>
   );
@@ -131,14 +123,12 @@ export default function QuestionFlow() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    alignItems: Platform.OS === "web" ? "center" : undefined,
   },
   safeArea: {
     flex: 1,
     maxWidth: Platform.OS === "web" ? 470 : "100%",
     marginTop: Platform.OS === "android" ? 48 : 0,
-  },
-  keyboardAvoidingContainer: {
-    flex: 1,
     marginBottom: Platform.OS === "ios" ? 70 : 0,
   },
   content: {

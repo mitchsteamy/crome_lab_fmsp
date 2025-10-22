@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Platform, StyleSheet, TouchableOpacity } from "react-native";
 import { ThemedText } from "../common/ThemedText";
 import { ThemedView } from "../common/ThemedView";
@@ -25,6 +25,47 @@ export default function QuestionFlowNavigation({
   progress,
 }: QuestionFlowNavigationProps) {
   const isBackDisabled = showInstructions && progress.current === 1;
+
+  // ✅ Add keyboard listener for Enter key
+  useEffect(() => {
+    if (Platform.OS !== "web") return; // Only on web
+
+    const handleKeyPress = (event: KeyboardEvent) => {
+      // Only handle Enter key
+      if (event.key !== "Enter") return;
+
+      // Get the currently focused element
+      const activeElement = document.activeElement as HTMLElement;
+      const tagName = activeElement?.tagName?.toLowerCase();
+
+      // Allow Enter in textareas for new lines
+      if (tagName === "textarea") {
+        return; // Let textarea handle Enter normally
+      }
+
+      // For all other cases (buttons, selects, inputs, or no focus),
+      // trigger Continue button if enabled
+      if (canProceed) {
+        event.preventDefault();
+        event.stopPropagation(); // ✅ Stop event from bubbling to focused element
+
+        // Blur the currently focused element to prevent re-triggering
+        if (activeElement && typeof activeElement.blur === "function") {
+          activeElement.blur();
+        }
+
+        onNext();
+      }
+    };
+
+    // Use capture phase to intercept before focused element gets the event
+    document.addEventListener("keydown", handleKeyPress, true); // ✅ true = capture phase
+
+    // Cleanup on unmount
+    return () => {
+      document.removeEventListener("keydown", handleKeyPress, true);
+    };
+  }, [onNext, canProceed]);
 
   return (
     <ThemedView style={styles.navigation} lightColor="#fff" darkColor="#2a2a2a">

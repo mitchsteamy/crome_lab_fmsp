@@ -7,8 +7,8 @@ const BENEFITS = [
   "Understand your medicines",
   "Stay organized",
   "Use medicines safely",
-  "Communicate clearly",
-  "Make informed choices",
+  // "Communicate clearly",
+  // "Make informed choices",
 ];
 
 export default function MissionStatement() {
